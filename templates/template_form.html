@@ -1,46 +1,50 @@
 {% extends "base.html" %}
 
 {% block header_actions %}
-  <a href="/templates/" class="btn btn-secondary">← Назад</a>
+  <a href="/templates/" class="metro-btn secondary">{{ t('tpl.back') }}</a>
 {% endblock %}
 
 {% block content %}
-<section class="card" style="max-width: 720px;">
-  <div class="card-header"><h2>{{ page_title }}</h2></div>
-  <div class="card-body">
-    <form method="post" action="/templates/{{ template.id ~ '/edit' if template else 'add' }}" class="form">
+<div class="panel" style="max-width:700px">
+  <div class="panel-header">
+    <span class="panel-title">{{ t(page_title) }}</span>
+  </div>
+  <div class="panel-body">
+    <form method="post"
+          action="/templates/{{ template.id ~ '/edit' if template else 'add' }}"
+          class="metro-form">
+
       <div class="form-row">
         <div class="form-group">
-          <label>Название *</label>
-          <input type="text" name="name" required value="{{ template.name if template else '' }}" placeholder="Cisco IOS Full" />
+          <label class="form-label">{{ t('tpl.name') }} *</label>
+          <input class="metro-input" type="text" name="name" required
+                 value="{{ template.name if template else '' }}" placeholder="Cisco IOS Full"/>
         </div>
         <div class="form-group">
-          <label>Тип устройства (информ.)</label>
-          <input type="text" name="device_type" value="{{ template.device_type if template else '' }}" placeholder="cisco_ios" />
+          <label class="form-label">{{ t('tpl.device_type') }}</label>
+          <input class="metro-input" type="text" name="device_type"
+                 value="{{ template.device_type if template else '' }}" placeholder="cisco_ios"/>
         </div>
       </div>
 
       <div class="form-group">
-        <label>Описание</label>
-        <input type="text" name="description" value="{{ template.description if template else '' }}" placeholder="Полный running-config…" />
+        <label class="form-label">{{ t('tpl.description') }}</label>
+        <input class="metro-input" type="text" name="description"
+               value="{{ template.description if template else '' }}"/>
       </div>
 
       <div class="form-group">
-        <label>Команды * <small class="form-hint">(по одной на строке; строки с # — комментарии)</small></label>
-        <textarea name="commands" rows="12" required class="monospace"
-          placeholder="terminal length 0&#10;show running-config&#10;show version">{{ template.commands if template else '' }}</textarea>
-      </div>
-
-      <div class="form-hint" style="margin-bottom:1rem;">
-        Доступные директивы: <code>enable</code> — войти в режим привилегий;
-        любая другая команда выполняется напрямую.
+        <label class="form-label">{{ t('tpl.commands') }}</label>
+        <textarea class="metro-textarea" name="commands" rows="12" required
+                  placeholder="terminal length 0&#10;show running-config&#10;show version">{{ template.commands if template else '' }}</textarea>
+        <span class="form-hint">{{ t('tpl.commands_hint') }}</span>
       </div>
 
       <div class="form-actions">
-        <button type="submit" class="btn btn-primary">💾 Сохранить</button>
-        <a href="/templates/" class="btn btn-secondary">Отмена</a>
+        <button type="submit" class="metro-btn primary">{{ t('tpl.save') }}</button>
+        <a href="/templates/" class="metro-btn secondary">{{ t('tpl.cancel') }}</a>
       </div>
     </form>
   </div>
-</section>
+</div>
 {% endblock %}

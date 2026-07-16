@@ -1,0 +1,5 @@
+- [Auth system](auth-system.md) — session via SessionMiddleware; first run → /setup; local bcrypt + LDAP via ldap3 (pure Python).
+- [Master key auto-gen](master-key.md) — if CHANGE_ME in config.yaml, key is auto-generated in lifespan and written back; _KEY_CACHE reset to None after.
+- [Ping NoneType bug](ping-bug.md) — consecutive_failures must use `or 0` guard; SQLAlchemy default not applied until flush.
+- [i18n approach](i18n.md) — server-side dict in app/i18n.py; make_translator(lang) returns t(key) closure passed to every template; lang stored in cookie.
+- [Metro UI CSS](metro-css.md) — --metro-bg/surface/text vars; body.theme-light overrides; square corners (border-radius:0); lowercase text-transform on headings/buttons.

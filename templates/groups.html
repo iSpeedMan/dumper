@@ -1,38 +1,44 @@
 {% extends "base.html" %}
 
 {% block header_actions %}
-  <a href="/inventory/" class="btn btn-secondary">← Инвентарь</a>
+  <a href="/inventory/" class="metro-btn secondary">{{ t('grp.back') }}</a>
 {% endblock %}
 
 {% block content %}
 <div class="two-col-narrow">
-  <!-- Add group form -->
-  <section class="card">
-    <div class="card-header"><h2>Добавить группу</h2></div>
-    <div class="card-body">
-      <form method="post" action="/inventory/groups/add" class="form">
+
+  <div class="panel">
+    <div class="panel-header"><span class="panel-title">{{ t('grp.add') }}</span></div>
+    <div class="panel-body">
+      <form method="post" action="/inventory/groups/add" class="metro-form">
         <div class="form-group">
-          <label>Название *</label>
-          <input type="text" name="name" required placeholder="Название группы" />
+          <label class="form-label">{{ t('grp.name') }} *</label>
+          <input class="metro-input" type="text" name="name" required placeholder="Moscow-DC"/>
         </div>
         <div class="form-group">
-          <label>Описание</label>
-          <textarea name="description" rows="2" placeholder="Описание…"></textarea>
+          <label class="form-label">{{ t('grp.description') }}</label>
+          <textarea class="metro-textarea" name="description" rows="2" style="min-height:50px"></textarea>
         </div>
         <div class="form-actions">
-          <button type="submit" class="btn btn-primary">Добавить</button>
+          <button type="submit" class="metro-btn primary">{{ t('grp.add_btn') }}</button>
         </div>
       </form>
     </div>
-  </section>
+  </div>
 
-  <!-- Groups list -->
-  <section class="card">
-    <div class="card-header"><h2>Группы ({{ groups|length }})</h2></div>
-    <div class="card-body table-wrapper">
+  <div class="panel">
+    <div class="panel-header"><span class="panel-title">{{ t('grp.title') }} ({{ groups|length }})</span></div>
+    <div class="table-wrap">
       {% if groups %}
-      <table class="data-table">
-        <thead><tr><th>Название</th><th>Описание</th><th>Устройств</th><th></th></tr></thead>
+      <table class="metro-table">
+        <thead>
+          <tr>
+            <th>{{ t('grp.name') }}</th>
+            <th>{{ t('grp.description') }}</th>
+            <th>{{ t('grp.count') }}</th>
+            <th></th>
+          </tr>
+        </thead>
         <tbody>
           {% for g in groups %}
           <tr>
@@ -41,8 +47,8 @@
             <td class="small">{{ g.devices|length }}</td>
             <td>
               <form method="post" action="/inventory/groups/{{ g.id }}/delete"
-                    onsubmit="return confirm('Удалить группу {{ g.name }}?')">
-                <button type="submit" class="btn btn-xs btn-danger">✕</button>
+                    data-confirm="{{ t('grp.delete') }}: {{ g.name }}?">
+                <button type="submit" class="metro-btn danger xs">✕</button>
               </form>
             </td>
           </tr>
@@ -50,9 +56,10 @@
         </tbody>
       </table>
       {% else %}
-        <div class="empty-state">Групп ещё нет.</div>
+        <div class="empty-state sm">{{ t('grp.no_groups') }}</div>
       {% endif %}
     </div>
-  </section>
+  </div>
+
 </div>
 {% endblock %}

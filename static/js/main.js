@@ -1,67 +1,99 @@
-/**
- * Dumper — Main JavaScript
- * Minimal vanilla JS: no framework dependencies.
- */
-
 "use strict";
 
-// ── Auto-dismiss flash messages ──────────────────────────────────────────────
-document.addEventListener("DOMContentLoaded", () => {
-  const flashes = document.querySelectorAll(".flash-message");
-  flashes.forEach((el) => {
-    setTimeout(() => {
-      el.style.opacity = "0";
-      el.style.transition = "opacity 0.5s";
-      setTimeout(() => el.remove(), 500);
-    }, 4000);
-  });
-});
+// ── Apply saved theme immediately ─────────────────────────────────────────────
+(function () {
+  const theme = getCookie("theme") || "dark";
+  if (theme === "light") document.body.classList.add("theme-light");
+})();
 
-// ── Confirm delete buttons (fallback if onsubmit attr not present) ────────────
-document.addEventListener("submit", (e) => {
-  const form = e.target;
-  const msg = form.dataset.confirm;
-  if (msg && !confirm(msg)) {
-    e.preventDefault();
-  }
-});
+function getCookie(name) {
+  const m = document.cookie.match(new RegExp("(?:^|; )" + name + "=([^;]*)"));
+  return m ? decodeURIComponent(m[1]) : null;
+}
 
-// ── Table filter (used on inventory page) ─────────────────────────────────────
-window.filterTable = function (inputId = "search-input", tableId = "devices-table") {
-  const q = document.getElementById(inputId)?.value?.toLowerCase() ?? "";
-  const rows = document.querySelectorAll(`#${tableId} tbody tr`);
-  rows.forEach((row) => {
+// ── Theme toggle ─────────────────────────────────────────────────────────────
+window.toggleTheme = function () {
+  const isLight = document.body.classList.toggle("theme-light");
+  const theme = isLight ? "light" : "dark";
+  // Post to server to set cookie
+  const form = document.createElement("form");
+  form.method = "POST";
+  form.action = "/set-theme";
+  const f = document.createElement("input");
+  f.name = "theme"; f.value = theme;
+  form.appendChild(f);
+  document.body.appendChild(form);
+  form.submit();
+};
+
+// ── Language switch ──────────────────────────────────────────────────────────
+window.switchLang = function (lang) {
+  const form = document.createElement("form");
+  form.method = "POST";
+  form.action = "/set-lang";
+  const f = document.createElement("input");
+  f.name = "lang"; f.value = lang;
+  form.appendChild(f);
+  document.body.appendChild(form);
+  form.submit();
+};
+
+// ── Table filter ─────────────────────────────────────────────────────────────
+window.filterTable = function (inputId, tableId) {
+  const q = (document.getElementById(inputId)?.value || "").toLowerCase();
+  document.querySelectorAll(`#${tableId} tbody tr`).forEach(row => {
     row.style.display = row.textContent.toLowerCase().includes(q) ? "" : "none";
   });
 };
 
-// ── Stats refresh (used on dashboard) ─────────────────────────────────────────
+// ── Dashboard stats refresh ──────────────────────────────────────────────────
 window.refreshStats = async function () {
   try {
     const r = await fetch("/api/stats");
     if (!r.ok) return;
     const d = await r.json();
     const map = {
-      "stat-total":    d.total,
-      "stat-online":   d.online,
-      "stat-offline":  d.offline,
-      "stat-unknown":  d.unknown,
-      "stat-success24": d.success_24h,
-      "stat-failed24":  d.failed_24h,
+      "stat-total": d.total, "stat-online": d.online,
+      "stat-offline": d.offline, "stat-unknown": d.unknown,
+      "stat-success24": d.success_24h, "stat-failed24": d.failed_24h,
     };
-    Object.entries(map).forEach(([id, val]) => {
+    Object.entries(map).forEach(([id, v]) => {
       const el = document.getElementById(id);
-      if (el) el.textContent = val;
+      if (el) el.textContent = v;
     });
+  } catch (e) { console.warn("Stats refresh failed:", e); }
+};
+
+// ── LDAP test connection ──────────────────────────────────────────────────────
+window.testLdap = async function () {
+  const btn = document.getElementById("ldap-test-btn");
+  const res = document.getElementById("ldap-result");
+  if (!btn || !res) return;
+  btn.disabled = true;
+  btn.textContent = "testing…";
+  try {
+    const r = await fetch("/settings/ldap/test", { method: "POST" });
+    const d = await r.json();
+    res.style.display = "block";
+    res.className = "ldap-result " + (d.ok ? "ok" : "err");
+    res.textContent = d.message;
   } catch (e) {
-    console.warn("Stats refresh failed:", e);
+    res.style.display = "block";
+    res.className = "ldap-result err";
+    res.textContent = "Connection error";
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "test connection";
   }
 };
 
-// ── Tooltip on truncated elements ─────────────────────────────────────────────
-document.addEventListener("DOMContentLoaded", () => {
-  document.querySelectorAll("[title]").forEach((el) => {
-    if (!el.title) return;
-    el.style.cursor = "help";
-  });
+// ── Confirm helper ────────────────────────────────────────────────────────────
+document.addEventListener("submit", e => {
+  const msg = e.target.dataset.confirm;
+  if (msg && !confirm(msg)) e.preventDefault();
 });
+
+// ── Auto-refresh dashboard every 30s ─────────────────────────────────────────
+if (document.getElementById("stat-total")) {
+  setInterval(refreshStats, 30000);
+}

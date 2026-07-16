@@ -53,3 +53,7 @@ sqlalchemy
 sqlmodel
 uvicorn[standard]
 pytz
+itsdangerous
+ldap3
+passlib[bcrypt]
+starlette

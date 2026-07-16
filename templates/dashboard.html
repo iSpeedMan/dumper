@@ -1,56 +1,55 @@
 {% extends "base.html" %}
 
 {% block header_actions %}
-  <button class="btn btn-sm btn-secondary" onclick="refreshStats()">↻ Обновить</button>
+  <button class="metro-btn secondary sm" onclick="refreshStats()">↺ {{ t('dash.refresh') }}</button>
 {% endblock %}
 
 {% block content %}
 
-<!-- Stats cards -->
-<div class="stats-grid" id="stats-grid">
-  <div class="stat-card stat-total">
+<!-- Stats tiles -->
+<div class="stats-grid">
+  <div class="stat-tile blue">
     <div class="stat-value" id="stat-total">{{ total_devices }}</div>
-    <div class="stat-label">Всего устройств</div>
+    <div class="stat-label">{{ t('dash.total') }}</div>
   </div>
-  <div class="stat-card stat-online">
+  <div class="stat-tile green">
     <div class="stat-value" id="stat-online">{{ online_count }}</div>
-    <div class="stat-label">Online</div>
+    <div class="stat-label">{{ t('dash.online') }}</div>
   </div>
-  <div class="stat-card stat-offline">
+  <div class="stat-tile red">
     <div class="stat-value" id="stat-offline">{{ offline_count }}</div>
-    <div class="stat-label">Offline</div>
+    <div class="stat-label">{{ t('dash.offline') }}</div>
   </div>
-  <div class="stat-card stat-unknown">
+  <div class="stat-tile gray">
     <div class="stat-value" id="stat-unknown">{{ unknown_count }}</div>
-    <div class="stat-label">Неизвестно</div>
+    <div class="stat-label">{{ t('dash.unknown') }}</div>
   </div>
-  <div class="stat-card stat-success">
+  <div class="stat-tile green">
     <div class="stat-value" id="stat-success24">{{ success_24h }}</div>
-    <div class="stat-label">Бэкапов за 24ч ✓</div>
+    <div class="stat-label">{{ t('dash.backups_24h') }} ✓</div>
   </div>
-  <div class="stat-card stat-failed">
+  <div class="stat-tile red">
     <div class="stat-value" id="stat-failed24">{{ failed_24h }}</div>
-    <div class="stat-label">Ошибок за 24ч ✗</div>
+    <div class="stat-label">{{ t('dash.errors_24h') }} ✗</div>
   </div>
 </div>
 
 <div class="two-col">
 
-  <!-- Device availability table -->
-  <section class="card">
-    <div class="card-header">
-      <h2>Состояние устройств</h2>
-      <a href="/inventory/" class="btn btn-sm btn-primary">Все устройства →</a>
+  <!-- Device availability -->
+  <div class="panel">
+    <div class="panel-header">
+      <span class="panel-title">{{ t('dash.device_status') }}</span>
+      <a href="/inventory/" class="metro-btn secondary xs">{{ t('dash.all_devices') }}</a>
     </div>
-    <div class="card-body table-wrapper">
+    <div class="table-wrap">
       {% if devices %}
-      <table class="data-table">
+      <table class="metro-table">
         <thead>
           <tr>
-            <th>Устройство</th>
-            <th>Хост</th>
-            <th>Статус</th>
-            <th>Последний ping</th>
+            <th>{{ t('dash.device') }}</th>
+            <th>{{ t('dash.status') }}</th>
+            <th>{{ t('dash.last_ping') }}</th>
           </tr>
         </thead>
         <tbody>
@@ -58,21 +57,23 @@
           <tr>
             <td>
               <a href="/inventory/{{ device.id }}/jobs">{{ device.name }}</a>
-              {% if device.group %}<span class="badge badge-gray">{{ device.group.name }}</span>{% endif %}
+              {% if device.group %}
+                <span class="badge gray" style="margin-left:4px">{{ device.group.name }}</span>
+              {% endif %}
+              <div class="small text-dim mono">{{ device.hostname }}</div>
             </td>
-            <td class="monospace">{{ device.hostname }}</td>
             <td>
               {% if device.status.value == 'online' %}
-                <span class="badge badge-green">● Online</span>
+                <span class="badge green">● {{ t('status.online') }}</span>
               {% elif device.status.value == 'offline' %}
-                <span class="badge badge-red">● Offline</span>
+                <span class="badge red">● {{ t('status.offline') }}</span>
               {% else %}
-                <span class="badge badge-gray">● Unknown</span>
+                <span class="badge gray">● {{ t('status.unknown') }}</span>
               {% endif %}
             </td>
-            <td class="monospace small">
-              {% if device.ping_status %}
-                {{ device.ping_status.last_checked.strftime('%H:%M:%S') if device.ping_status.last_checked else '—' }}
+            <td class="small mono">
+              {% if device.ping_status and device.ping_status.last_checked %}
+                {{ device.ping_status.last_checked.strftime('%H:%M:%S') }}
                 {% if device.ping_status.rtt_ms %}
                   <span class="rtt">{{ device.ping_status.rtt_ms }}ms</span>
                 {% endif %}
@@ -84,76 +85,55 @@
       </table>
       {% else %}
         <div class="empty-state">
-          <p>Устройства не добавлены.</p>
-          <a href="/inventory/add" class="btn btn-primary">Добавить устройство</a>
+          <p>{{ t('dash.no_devices') }}</p>
+          <a href="/inventory/add" class="metro-btn primary">{{ t('dash.add_device') }}</a>
         </div>
       {% endif %}
     </div>
-  </section>
+  </div>
 
   <!-- Recent backup jobs -->
-  <section class="card">
-    <div class="card-header">
-      <h2>Последние бэкапы</h2>
+  <div class="panel">
+    <div class="panel-header">
+      <span class="panel-title">{{ t('dash.recent_backups') }}</span>
     </div>
-    <div class="card-body table-wrapper">
+    <div class="table-wrap">
       {% if recent_jobs %}
-      <table class="data-table">
+      <table class="metro-table">
         <thead>
           <tr>
-            <th>Устройство</th>
-            <th>Статус</th>
-            <th>Длит.</th>
-            <th>Время</th>
+            <th>{{ t('dash.device') }}</th>
+            <th>{{ t('dash.status') }}</th>
+            <th>{{ t('dash.duration') }}</th>
+            <th>{{ t('dash.time') }}</th>
           </tr>
         </thead>
         <tbody>
           {% for job in recent_jobs %}
           <tr>
-            <td>
-              <a href="/inventory/{{ job.device_id }}/jobs">{{ job.device.name }}</a>
-            </td>
+            <td><a href="/inventory/{{ job.device_id }}/jobs">{{ job.device.name }}</a></td>
             <td>
               {% if job.status.value == 'success' %}
-                <span class="badge badge-green">✓ OK</span>
+                <span class="badge green">✓</span>
               {% elif job.status.value == 'failed' %}
-                <span class="badge badge-red" title="{{ job.error_message }}">✗ FAIL</span>
+                <span class="badge red" title="{{ job.error_message or '' }}">✗</span>
               {% elif job.status.value == 'running' %}
-                <span class="badge badge-blue">⟳ Running</span>
+                <span class="badge blue">⟳</span>
               {% else %}
-                <span class="badge badge-gray">{{ job.status.value }}</span>
+                <span class="badge gray">{{ job.status.value }}</span>
               {% endif %}
             </td>
             <td class="small">{{ job.duration_seconds or '—' }}s</td>
-            <td class="small monospace">
-              {{ job.started_at.strftime('%m-%d %H:%M') if job.started_at else '—' }}
-            </td>
+            <td class="small mono">{{ job.started_at.strftime('%m-%d %H:%M') if job.started_at else '—' }}</td>
           </tr>
           {% endfor %}
         </tbody>
       </table>
       {% else %}
-        <div class="empty-state">Бэкапов ещё не было.</div>
+        <div class="empty-state sm">{{ t('dash.no_backups') }}</div>
       {% endif %}
     </div>
-  </section>
+  </div>
 
 </div>
-
-<script>
-async function refreshStats() {
-  try {
-    const r = await fetch('/api/stats');
-    const d = await r.json();
-    document.getElementById('stat-total').textContent = d.total;
-    document.getElementById('stat-online').textContent = d.online;
-    document.getElementById('stat-offline').textContent = d.offline;
-    document.getElementById('stat-unknown').textContent = d.unknown;
-    document.getElementById('stat-success24').textContent = d.success_24h;
-    document.getElementById('stat-failed24').textContent = d.failed_24h;
-  } catch(e) { console.error('Stats refresh failed', e); }
-}
-// Auto-refresh every 30s
-setInterval(refreshStats, 30000);
-</script>
 {% endblock %}

@@ -24,7 +24,7 @@ database:
 # Generate with: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
 # ------------------------------------------------------------------------------
 encryption:
-  master_key: "CHANGE_ME_base64_encoded_32byte_key"
+  master_key: "iiEv0AeL8agKGVU9fZVvob2o25unxgnNuCX5baUQdC0="
 
 # ------------------------------------------------------------------------------
 # Git repository for config storage

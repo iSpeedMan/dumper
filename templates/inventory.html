@@ -1,67 +1,74 @@
 {% extends "base.html" %}
 
 {% block header_actions %}
-  <a href="/inventory/add" class="btn btn-primary">+ Добавить устройство</a>
-  <a href="/inventory/groups" class="btn btn-secondary">Группы</a>
+  <a href="/inventory/add" class="metro-btn primary">+ {{ t('inv.add') }}</a>
+  <a href="/inventory/groups" class="metro-btn secondary">{{ t('inv.groups') }}</a>
 {% endblock %}
 
 {% block content %}
-<section class="card">
-  <div class="card-header">
-    <h2>Устройства ({{ devices|length }})</h2>
-    <div class="search-box">
-      <input type="text" id="search-input" placeholder="Поиск…" oninput="filterTable()" />
+<div class="panel">
+  <div class="panel-header">
+    <span class="panel-title">{{ t('inv.title') }} ({{ devices|length }})</span>
+    <div class="search-wrap">
+      <input class="metro-input" type="text" id="search-input"
+             placeholder="{{ t('inv.search') }}"
+             oninput="filterTable('search-input','devices-table')"
+             style="padding:6px 10px 6px 32px; width:200px;"/>
     </div>
   </div>
-  <div class="card-body table-wrapper">
+  <div class="table-wrap">
     {% if devices %}
-    <table class="data-table" id="devices-table">
+    <table class="metro-table" id="devices-table">
       <thead>
         <tr>
-          <th>Имя</th>
-          <th>Хост</th>
-          <th>Тип</th>
-          <th>Группа</th>
-          <th>Статус</th>
-          <th>Cron</th>
-          <th>Бэкап</th>
-          <th>Действия</th>
+          <th>{{ t('inv.name') }}</th>
+          <th>{{ t('inv.host') }}</th>
+          <th>{{ t('inv.type') }}</th>
+          <th>{{ t('inv.group') }}</th>
+          <th>{{ t('inv.status') }}</th>
+          <th>{{ t('inv.last_change') }}</th>
+          <th>{{ t('inv.cron') }}</th>
+          <th>{{ t('inv.actions') }}</th>
         </tr>
       </thead>
       <tbody>
         {% for device in devices %}
         <tr>
-          <td><strong>{{ device.name }}</strong></td>
-          <td class="monospace">{{ device.hostname }}:{{ device.port }}</td>
-          <td><span class="badge badge-gray">{{ device.netmiko_device_type }}</span></td>
-          <td>{{ device.group.name if device.group else '—' }}</td>
+          <td><strong>{{ device.name }}</strong>
+            {% if not device.backup_enabled %}
+              <span class="badge gray" style="margin-left:4px">off</span>
+            {% endif %}
+          </td>
+          <td class="mono small">{{ device.hostname }}:{{ device.port }}</td>
+          <td><span class="badge gray">{{ device.netmiko_device_type }}</span></td>
+          <td class="small">{{ device.group.name if device.group else '—' }}</td>
           <td>
             {% if device.status.value == 'online' %}
-              <span class="badge badge-green">● Online</span>
+              <span class="badge green">● {{ t('status.online') }}</span>
             {% elif device.status.value == 'offline' %}
-              <span class="badge badge-red">● Offline</span>
+              <span class="badge red">● {{ t('status.offline') }}</span>
             {% else %}
-              <span class="badge badge-gray">● Unknown</span>
+              <span class="badge gray">● {{ t('status.unknown') }}</span>
             {% endif %}
           </td>
-          <td class="monospace small">{{ device.custom_cron or 'default' }}</td>
-          <td>
-            {% if device.backup_enabled %}
-              <span class="badge badge-green">✓</span>
+          <td class="small mono">
+            {% if last_dates.get(device.id) %}
+              {{ last_dates[device.id].strftime('%Y-%m-%d %H:%M') }}
             {% else %}
-              <span class="badge badge-gray">✗</span>
+              <span class="text-dim">{{ t('inv.never') }}</span>
             {% endif %}
           </td>
+          <td class="small mono">{{ device.custom_cron or t('inv.default_cron') }}</td>
           <td class="actions">
-            <a href="/inventory/{{ device.id }}/edit" class="btn btn-xs btn-secondary">✏ Edit</a>
-            <a href="/inventory/{{ device.id }}/jobs" class="btn btn-xs btn-secondary">📋 Jobs</a>
-            <a href="/diff/{{ device.id }}" class="btn btn-xs btn-secondary">⊕ Diff</a>
+            <a href="/inventory/{{ device.id }}/edit" class="metro-btn secondary xs">✏</a>
+            <a href="/inventory/{{ device.id }}/jobs" class="metro-btn secondary xs">☰</a>
+            <a href="/diff/{{ device.id }}" class="metro-btn secondary xs">⊕</a>
             <form method="post" action="/inventory/{{ device.id }}/backup" style="display:inline">
-              <button type="submit" class="btn btn-xs btn-primary">▶ Run</button>
+              <button type="submit" class="metro-btn primary xs">▶</button>
             </form>
             <form method="post" action="/inventory/{{ device.id }}/delete" style="display:inline"
-                  onsubmit="return confirm('Удалить устройство {{ device.name }}?')">
-              <button type="submit" class="btn btn-xs btn-danger">✕</button>
+                  data-confirm="{{ t('inv.confirm_delete') }}: {{ device.name }}?">
+              <button type="submit" class="metro-btn danger xs">✕</button>
             </form>
           </td>
         </tr>
@@ -70,20 +77,10 @@
     </table>
     {% else %}
       <div class="empty-state">
-        <p>Устройства не добавлены.</p>
-        <a href="/inventory/add" class="btn btn-primary">Добавить первое устройство</a>
+        <p>{{ t('inv.no_devices') }}</p>
+        <a href="/inventory/add" class="metro-btn primary">{{ t('inv.add_first') }}</a>
       </div>
     {% endif %}
   </div>
-</section>
-
-<script>
-function filterTable() {
-  const q = document.getElementById('search-input').value.toLowerCase();
-  const rows = document.querySelectorAll('#devices-table tbody tr');
-  rows.forEach(row => {
-    row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
-  });
-}
-</script>
+</div>
 {% endblock %}

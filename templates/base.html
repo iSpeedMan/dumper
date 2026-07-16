@@ -1,59 +1,85 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="{{ lang or 'ru' }}">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>{% block title %}{{ page_title }} — Dumper{% endblock %}</title>
-  <link rel="stylesheet" href="/static/css/style.css" />
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📦</text></svg>" />
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>{% block title %}{{ t(page_title) if page_title else 'dumper' }} — dumper{% endblock %}</title>
+  <link rel="stylesheet" href="/static/css/style.css"/>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📦</text></svg>"/>
+  <script>
+    // Apply theme before render to prevent flash
+    (function(){
+      var c=document.cookie.match(/theme=([^;]+)/);
+      if(c&&c[1]==='light') document.documentElement.style.background='#e5e5e5';
+    })();
+  </script>
 </head>
-<body>
+<body class="{{ 'theme-light' if theme == 'light' else '' }}">
+<div class="app-shell">
+
   <!-- Sidebar -->
   <nav class="sidebar">
     <div class="sidebar-brand">
-      <span class="brand-icon">📦</span>
-      <span class="brand-name">Dumper</span>
+      <span style="font-size:1.3rem">📦</span>
+      <span class="brand-name">dump<span class="brand-accent">er</span></span>
     </div>
+
     <ul class="nav-links">
       <li>
         <a href="/" class="nav-link {% if request.url.path == '/' %}active{% endif %}">
-          <span class="nav-icon">🏠</span> Dashboard
+          <span class="nav-icon">⬛</span> {{ t('nav.dashboard') }}
         </a>
       </li>
       <li>
         <a href="/inventory/" class="nav-link {% if '/inventory' in request.url.path %}active{% endif %}">
-          <span class="nav-icon">🗂️</span> Inventory
+          <span class="nav-icon">☰</span> {{ t('nav.inventory') }}
         </a>
       </li>
       <li>
         <a href="/templates/" class="nav-link {% if '/templates' in request.url.path %}active{% endif %}">
-          <span class="nav-icon">📋</span> Templates
+          <span class="nav-icon">≡</span> {{ t('nav.templates') }}
         </a>
       </li>
       <li>
         <a href="/settings/" class="nav-link {% if '/settings' in request.url.path %}active{% endif %}">
-          <span class="nav-icon">⚙️</span> Settings
+          <span class="nav-icon">⚙</span> {{ t('nav.settings') }}
         </a>
       </li>
     </ul>
+
     <div class="sidebar-footer">
-      <span class="version">v1.0.0</span>
+      {% if user %}
+      <div class="sidebar-user">
+        <span>◉</span>
+        <div>
+          <strong>{{ user.username }}</strong><br>
+          <a href="/logout" style="color:var(--metro-text-dim);font-size:0.72rem;">{{ t('nav.logout') }}</a>
+        </div>
+      </div>
+      {% endif %}
+      <div class="sidebar-controls">
+        <!-- Theme toggle -->
+        <button class="ctrl-btn" onclick="toggleTheme()" title="Toggle theme">
+          {{ '☾' if theme != 'light' else '☼' }}
+        </button>
+        <!-- Language switch -->
+        <button class="ctrl-btn {% if lang == 'ru' %}active{% endif %}" onclick="switchLang('ru')">ru</button>
+        <button class="ctrl-btn {% if lang == 'en' %}active{% endif %}" onclick="switchLang('en')">en</button>
+      </div>
     </div>
   </nav>
 
   <!-- Main content -->
   <main class="main-content">
     <header class="page-header">
-      <h1 class="page-title">{{ page_title }}</h1>
-      <div class="header-actions">
-        {% block header_actions %}{% endblock %}
-      </div>
+      <h1 class="page-title">{{ t(page_title) if page_title else '' }}</h1>
+      <div class="header-actions">{% block header_actions %}{% endblock %}</div>
     </header>
-
     {% block content %}{% endblock %}
   </main>
 
-  <script src="/static/js/main.js"></script>
-  {% block scripts %}{% endblock %}
+</div>
+<script src="/static/js/main.js"></script>
+{% block scripts %}{% endblock %}
 </body>
 </html>

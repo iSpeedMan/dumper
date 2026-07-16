@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="{{ lang or 'ru' }}">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>{{ t('auth.setup_title') }} — dumper</title>
+  <link rel="stylesheet" href="/static/css/style.css"/>
+</head>
+<body>
+<div class="auth-screen">
+  <div class="auth-box">
+    <div class="auth-brand"><strong>dump</strong>er</div>
+    <h1 class="auth-title">{{ t('auth.setup_title') }}</h1>
+    <p class="auth-subtitle">{{ t('auth.setup_desc') }}</p>
+
+    {% if error %}
+    <div class="metro-error">{{ error }}</div>
+    {% endif %}
+
+    <form method="post" action="/setup" class="metro-form">
+      <div class="form-group">
+        <label class="form-label">{{ t('auth.username') }}</label>
+        <input class="metro-input" type="text" name="username" autofocus required/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">{{ t('auth.password') }}</label>
+        <input class="metro-input" type="password" name="password" required/>
+      </div>
+      <button type="submit" class="metro-btn primary w-full">{{ t('auth.create_admin') }}</button>
+    </form>
+  </div>
+</div>
+</body>
+</html>

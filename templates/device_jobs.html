@@ -1,73 +1,74 @@
 {% extends "base.html" %}
 
 {% block header_actions %}
-  <a href="/inventory/" class="btn btn-secondary">← Инвентарь</a>
-  <a href="/diff/{{ device.id }}" class="btn btn-secondary">⊕ Diff viewer</a>
+  <a href="/inventory/" class="metro-btn secondary">{{ t('job.back_inventory') }}</a>
+  <a href="/diff/{{ device.id }}" class="metro-btn secondary">⊕ {{ t('job.diff_viewer') }}</a>
   <form method="post" action="/inventory/{{ device.id }}/backup" style="display:inline">
-    <button type="submit" class="btn btn-primary">▶ Run backup now</button>
+    <button type="submit" class="metro-btn primary">▶ {{ t('job.run_now') }}</button>
   </form>
 {% endblock %}
 
 {% block content %}
-<div class="device-meta card" style="margin-bottom:1rem;">
-  <div class="card-body" style="padding:0.75rem 1rem;">
+<!-- Device meta bar -->
+<div class="panel" style="margin-bottom:var(--spacing-m)">
+  <div class="panel-body" style="padding:10px var(--spacing-m); display:flex; align-items:center; gap:var(--spacing-m); flex-wrap:wrap;">
     <strong>{{ device.name }}</strong>
-    <span class="monospace" style="margin-left:1rem;">{{ device.hostname }}:{{ device.port }}</span>
-    <span class="badge badge-gray" style="margin-left:0.5rem;">{{ device.netmiko_device_type }}</span>
+    <span class="mono small">{{ device.hostname }}:{{ device.port }}</span>
+    <span class="badge gray">{{ device.netmiko_device_type }}</span>
     {% if device.status.value == 'online' %}
-      <span class="badge badge-green" style="margin-left:0.5rem;">● Online</span>
+      <span class="badge green">● {{ t('status.online') }}</span>
     {% elif device.status.value == 'offline' %}
-      <span class="badge badge-red" style="margin-left:0.5rem;">● Offline</span>
+      <span class="badge red">● {{ t('status.offline') }}</span>
     {% else %}
-      <span class="badge badge-gray" style="margin-left:0.5rem;">● Unknown</span>
+      <span class="badge gray">● {{ t('status.unknown') }}</span>
     {% endif %}
   </div>
 </div>
 
-<section class="card">
-  <div class="card-header"><h2>История бэкапов (последние {{ jobs|length }})</h2></div>
-  <div class="card-body table-wrapper">
+<div class="panel">
+  <div class="panel-header">
+    <span class="panel-title">{{ t('job.title') }} ({{ jobs|length }})</span>
+  </div>
+  <div class="table-wrap">
     {% if jobs %}
-    <table class="data-table">
+    <table class="metro-table">
       <thead>
         <tr>
-          <th>#</th>
-          <th>Статус</th>
-          <th>Запущен</th>
-          <th>Длит.</th>
-          <th>Commit</th>
-          <th>Инициатор</th>
-          <th>Ошибка</th>
+          <th>{{ t('job.id') }}</th>
+          <th>{{ t('job.status') }}</th>
+          <th>{{ t('job.started') }}</th>
+          <th>{{ t('job.duration') }}</th>
+          <th>{{ t('job.commit') }}</th>
+          <th>{{ t('job.trigger') }}</th>
+          <th>{{ t('job.error') }}</th>
         </tr>
       </thead>
       <tbody>
         {% for job in jobs %}
         <tr>
-          <td class="small">{{ job.id }}</td>
+          <td class="small text-dim">{{ job.id }}</td>
           <td>
             {% if job.status.value == 'success' %}
-              <span class="badge badge-green">✓ Success</span>
+              <span class="badge green">✓ {{ t('status.success') }}</span>
             {% elif job.status.value == 'failed' %}
-              <span class="badge badge-red">✗ Failed</span>
+              <span class="badge red">✗ {{ t('status.failed') }}</span>
             {% elif job.status.value == 'running' %}
-              <span class="badge badge-blue">⟳ Running</span>
+              <span class="badge blue">⟳ {{ t('status.running') }}</span>
             {% else %}
-              <span class="badge badge-gray">{{ job.status.value }}</span>
+              <span class="badge gray">{{ job.status.value }}</span>
             {% endif %}
           </td>
-          <td class="monospace small">
-            {{ job.started_at.strftime('%Y-%m-%d %H:%M:%S') if job.started_at else '—' }}
-          </td>
+          <td class="mono small">{{ job.started_at.strftime('%Y-%m-%d %H:%M:%S') if job.started_at else '—' }}</td>
           <td class="small">{{ job.duration_seconds or '—' }}s</td>
-          <td class="monospace small">
+          <td class="mono small">
             {% if job.commit_hash %}
-              <a href="/diff/{{ device.id }}" title="{{ job.commit_hash }}">{{ job.commit_hash[:8] }}</a>
+              <a href="/diff/{{ device.id }}">{{ job.commit_hash[:8] }}</a>
             {% else %}—{% endif %}
           </td>
           <td class="small">{{ job.triggered_by }}</td>
-          <td class="small error-text" title="{{ job.error_message or '' }}">
+          <td class="small text-red" title="{{ job.error_message or '' }}">
             {% if job.error_message %}
-              {{ job.error_message[:80] }}{% if job.error_message|length > 80 %}…{% endif %}
+              {{ job.error_message[:60] }}{% if job.error_message|length > 60 %}…{% endif %}
             {% else %}—{% endif %}
           </td>
         </tr>
@@ -75,8 +76,8 @@
       </tbody>
     </table>
     {% else %}
-      <div class="empty-state">Бэкапов ещё не было для этого устройства.</div>
+      <div class="empty-state">{{ t('job.no_jobs') }}</div>
     {% endif %}
   </div>
-</section>
+</div>
 {% endblock %}

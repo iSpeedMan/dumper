@@ -1,13 +1,5 @@
 """
 models.py — SQLAlchemy ORM models for all database tables.
-
-Tables:
-  - devices        : Network devices (routers, switches, firewalls)
-  - device_groups  : Logical groupings of devices
-  - backup_templates: Command templates per device type
-  - backup_jobs    : Backup execution history
-  - ping_status    : Latest ICMP ping result per device
-  - notification_webhooks: Configured webhook endpoints
 """
 
 import enum
@@ -50,8 +42,36 @@ class ConnectionType(str, enum.Enum):
 # Models
 # ---------------------------------------------------------------------------
 
+class User(Base):
+    """Local user account for web UI authentication."""
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key=True, index=True)
+    username = Column(String(128), unique=True, nullable=False, index=True)
+    password_hash = Column(String(256), nullable=True)   # None for LDAP-only users
+    is_admin = Column(Boolean, default=True, nullable=False)
+    is_active = Column(Boolean, default=True, nullable=False)
+    is_ldap = Column(Boolean, default=False, nullable=False)
+    created_at = Column(DateTime, default=func.now(), nullable=False)
+    last_login = Column(DateTime, nullable=True)
+
+    def __repr__(self) -> str:
+        return f"<User id={self.id} username={self.username!r}>"
+
+
+class AppSetting(Base):
+    """Key-value store for app settings editable from the UI (e.g. LDAP config)."""
+    __tablename__ = "app_settings"
+
+    key = Column(String(128), primary_key=True)
+    value = Column(Text, nullable=True)
+
+    def __repr__(self) -> str:
+        return f"<AppSetting {self.key!r}={self.value!r}>"
+
+
 class DeviceGroup(Base):
-    """Logical group for organizing devices (e.g. by site, role, vendor)."""
+    """Logical group for organizing devices."""
     __tablename__ = "device_groups"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -66,43 +86,33 @@ class DeviceGroup(Base):
 
 
 class Device(Base):
-    """
-    A managed network device. Credentials are stored AES-256-GCM encrypted.
-    The 'netmiko_device_type' must match Netmiko's supported platform strings
-    (e.g. 'cisco_ios', 'cisco_xr', 'juniper', 'huawei', 'mikrotik_routeros').
-    """
+    """A managed network device. Credentials stored AES-256-GCM encrypted."""
     __tablename__ = "devices"
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(128), nullable=False, index=True)
-    hostname = Column(String(256), nullable=False)  # IP or FQDN
+    hostname = Column(String(256), nullable=False)
     port = Column(Integer, default=22, nullable=False)
     connection_type = Column(Enum(ConnectionType), default=ConnectionType.SSH, nullable=False)
     netmiko_device_type = Column(String(64), default="cisco_ios", nullable=False)
 
     # Encrypted credentials (AES-256-GCM via crypto.py)
-    username = Column(String(256), nullable=False)        # encrypted
-    password = Column(String(512), nullable=False)        # encrypted
-    enable_secret = Column(String(512), nullable=True)    # encrypted, optional
+    username = Column(String(256), nullable=False)
+    password = Column(String(512), nullable=False)
+    enable_secret = Column(String(512), nullable=True)
 
-    # Backup config
     group_id = Column(Integer, ForeignKey("device_groups.id"), nullable=True)
     template_id = Column(Integer, ForeignKey("backup_templates.id"), nullable=True)
-    # Custom cron expression; None means use the global default
     custom_cron = Column(String(64), nullable=True)
-    # Whether this device participates in scheduled backups
     backup_enabled = Column(Boolean, default=True, nullable=False)
-    # Notes / description
     description = Column(Text, nullable=True)
 
-    # Current status (updated by ping engine)
     status = Column(Enum(DeviceStatus), default=DeviceStatus.UNKNOWN, nullable=False)
     last_seen = Column(DateTime, nullable=True)
 
     created_at = Column(DateTime, default=func.now(), nullable=False)
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now(), nullable=False)
 
-    # Relationships
     group = relationship("DeviceGroup", back_populates="devices")
     template = relationship("BackupTemplate", back_populates="devices")
     backup_jobs = relationship("BackupJob", back_populates="device",
@@ -115,21 +125,13 @@ class Device(Base):
 
 
 class BackupTemplate(Base):
-    """
-    A named sequence of CLI commands to run on a device to collect its config.
-    Commands are stored as a newline-separated list. Special directives:
-      - 'enable'        : Send enable command (uses enable_secret)
-      - 'terminal length 0' : Disable paging
-      - Any other line  : Run as a CLI command, capture output
-    """
+    """Named sequence of CLI commands to collect device config."""
     __tablename__ = "backup_templates"
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(128), unique=True, nullable=False)
     description = Column(Text, nullable=True)
-    # Newline-separated list of commands
     commands = Column(Text, nullable=False)
-    # Expected device type this template targets (informational)
     device_type = Column(String(64), nullable=True)
 
     created_at = Column(DateTime, default=func.now(), nullable=False)
@@ -138,7 +140,6 @@ class BackupTemplate(Base):
     devices = relationship("Device", back_populates="template")
 
     def get_commands(self) -> list[str]:
-        """Return commands as a list, stripping blank lines and comments."""
         return [
             line.strip()
             for line in (self.commands or "").splitlines()
@@ -150,28 +151,20 @@ class BackupTemplate(Base):
 
 
 class BackupJob(Base):
-    """
-    Record of a single backup execution attempt for a device.
-    Stores outcome, error message, and the Git commit hash if successful.
-    """
+    """Record of a single backup execution attempt."""
     __tablename__ = "backup_jobs"
 
     id = Column(Integer, primary_key=True, index=True)
     device_id = Column(Integer, ForeignKey("devices.id"), nullable=False, index=True)
 
     status = Column(Enum(BackupJobStatus), default=BackupJobStatus.PENDING, nullable=False)
-    # Git commit SHA if backup was committed successfully
     commit_hash = Column(String(64), nullable=True)
-    # Path to the saved config file relative to git repo root
     config_file_path = Column(String(512), nullable=True)
-    # Error message if status == FAILED
     error_message = Column(Text, nullable=True)
-    # Full output captured from device (may be large)
     raw_output = Column(Text, nullable=True)
-    # Duration of the backup operation in seconds
     duration_seconds = Column(Integer, nullable=True)
 
-    triggered_by = Column(String(64), default="scheduler", nullable=False)  # "scheduler" or "manual"
+    triggered_by = Column(String(64), default="scheduler", nullable=False)
     started_at = Column(DateTime, default=func.now(), nullable=False)
     finished_at = Column(DateTime, nullable=True)
 
@@ -182,16 +175,14 @@ class BackupJob(Base):
 
 
 class PingStatus(Base):
-    """Latest ICMP ping result for a device. One row per device (upserted)."""
+    """Latest ICMP ping result for a device (one row per device)."""
     __tablename__ = "ping_status"
 
     id = Column(Integer, primary_key=True, index=True)
     device_id = Column(Integer, ForeignKey("devices.id"), unique=True, nullable=False)
 
     is_reachable = Column(Boolean, default=False, nullable=False)
-    # Round-trip time in milliseconds
     rtt_ms = Column(Integer, nullable=True)
-    # Number of consecutive failures (reset to 0 on success)
     consecutive_failures = Column(Integer, default=0, nullable=False)
     last_checked = Column(DateTime, default=func.now(), nullable=False)
 
@@ -211,6 +202,7 @@ class NotificationWebhook(Base):
     enabled = Column(Boolean, default=True, nullable=False)
     on_backup_fail = Column(Boolean, default=True, nullable=False)
     on_ping_fail = Column(Boolean, default=True, nullable=False)
+    send_diff = Column(Boolean, default=False, nullable=False)  # Include git diff in payload
     created_at = Column(DateTime, default=func.now(), nullable=False)
 
     def __repr__(self) -> str:

@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="{{ lang or 'ru' }}">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>{{ t('auth.login_title') }} — dumper</title>
+  <link rel="stylesheet" href="/static/css/style.css"/>
+  <script>
+    (function(){var c=document.cookie.match(/theme=([^;]+)/);if(c&&c[1]==='light')document.documentElement.style.background='#e5e5e5';})();
+  </script>
+</head>
+<body class="{{ 'theme-light' if request.cookies.get('theme') == 'light' else '' }}">
+<div class="auth-screen">
+  <div class="auth-box">
+    <div class="auth-brand"><strong>dump</strong>er</div>
+    <h1 class="auth-title">{{ t('auth.login_title') }}</h1>
+    <p class="auth-subtitle">network configuration backup</p>
+
+    {% if error %}
+    <div class="metro-error">{{ t(error) }}</div>
+    {% endif %}
+
+    <form method="post" action="/login" class="metro-form">
+      <input type="hidden" name="next" value="{{ request.query_params.get('next', '/') }}"/>
+      <div class="form-group">
+        <label class="form-label">{{ t('auth.username') }}</label>
+        <input class="metro-input" type="text" name="username" autofocus autocomplete="username" required/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">{{ t('auth.password') }}</label>
+        <input class="metro-input" type="password" name="password" autocomplete="current-password" required/>
+      </div>
+      <button type="submit" class="metro-btn primary w-full">{{ t('auth.sign_in') }}</button>
+    </form>
+
+    <div style="margin-top:20px; display:flex; gap:8px; justify-content:flex-end;">
+      <button class="ctrl-btn {% if lang == 'ru' %}active{% endif %}" onclick="switchLang('ru')">ru</button>
+      <button class="ctrl-btn {% if lang == 'en' %}active{% endif %}" onclick="switchLang('en')">en</button>
+      <button class="ctrl-btn" onclick="toggleTheme()">{{ '☾' if request.cookies.get('theme') != 'light' else '☼' }}</button>
+    </div>
+  </div>
+</div>
+<script src="/static/js/main.js"></script>
+</body>
+</html>

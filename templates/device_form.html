@@ -1,116 +1,129 @@
 {% extends "base.html" %}
 
 {% block header_actions %}
-  <a href="/inventory/" class="btn btn-secondary">← Назад</a>
+  <a href="/inventory/" class="metro-btn secondary">{{ t('dev.back') }}</a>
 {% endblock %}
 
 {% block content %}
-<section class="card" style="max-width: 720px;">
-  <div class="card-header"><h2>{{ page_title }}</h2></div>
-  <div class="card-body">
-    <form method="post" action="/inventory/{{ device.id ~ '/edit' if device else 'add' }}" class="form">
+<div class="panel" style="max-width:700px">
+  <div class="panel-header">
+    <span class="panel-title">{{ t(page_title) }}</span>
+  </div>
+  <div class="panel-body">
+    <form method="post"
+          action="/inventory/{{ device.id ~ '/edit' if device else 'add' }}"
+          class="metro-form">
 
       <div class="form-row">
         <div class="form-group">
-          <label>Имя устройства *</label>
-          <input type="text" name="name" required value="{{ device.name if device else '' }}" placeholder="core-sw-01" />
+          <label class="form-label">{{ t('dev.name') }} *</label>
+          <input class="metro-input" type="text" name="name" required
+                 value="{{ device.name if device else '' }}" placeholder="core-sw-01"/>
         </div>
         <div class="form-group">
-          <label>Хост / IP *</label>
-          <input type="text" name="hostname" required value="{{ device.hostname if device else '' }}" placeholder="192.168.1.1" />
+          <label class="form-label">{{ t('dev.host') }} *</label>
+          <input class="metro-input" type="text" name="hostname" required
+                 value="{{ device.hostname if device else '' }}" placeholder="192.168.1.1"/>
         </div>
       </div>
 
-      <div class="form-row">
-        <div class="form-group form-group-sm">
-          <label>Порт</label>
-          <input type="number" name="port" value="{{ device.port if device else 22 }}" min="1" max="65535" />
+      <div class="form-row trio">
+        <div class="form-group">
+          <label class="form-label">{{ t('dev.port') }}</label>
+          <input class="metro-input" type="number" name="port"
+                 value="{{ device.port if device else 22 }}" min="1" max="65535"/>
         </div>
-        <div class="form-group form-group-sm">
-          <label>Протокол</label>
-          <select name="connection_type">
-            <option value="ssh" {% if not device or device.connection_type == 'ssh' %}selected{% endif %}>SSH</option>
+        <div class="form-group">
+          <label class="form-label">{{ t('dev.protocol') }}</label>
+          <select class="metro-select" name="connection_type">
+            <option value="ssh"    {% if not device or device.connection_type == 'ssh' %}selected{% endif %}>SSH</option>
             <option value="telnet" {% if device and device.connection_type == 'telnet' %}selected{% endif %}>Telnet</option>
           </select>
         </div>
         <div class="form-group">
-          <label>Тип Netmiko *</label>
-          <select name="netmiko_device_type">
-            {% for t in netmiko_types %}
-            <option value="{{ t }}" {% if device and device.netmiko_device_type == t %}selected{% endif %}>{{ t }}</option>
+          <label class="form-label">{{ t('dev.netmiko_type') }} *</label>
+          <select class="metro-select" name="netmiko_device_type">
+            {% for nt in netmiko_types %}
+            <option value="{{ nt }}" {% if device and device.netmiko_device_type == nt %}selected{% endif %}>{{ nt }}</option>
             {% endfor %}
           </select>
         </div>
       </div>
 
-      <div class="form-divider">Учётные данные</div>
+      <div class="form-divider">{{ t('dev.credentials') }}</div>
 
       <div class="form-row">
         <div class="form-group">
-          <label>Логин *</label>
-          <input type="text" name="username" required value="{{ device.username if device else '' }}" autocomplete="off" />
+          <label class="form-label">{{ t('dev.username') }} *</label>
+          <input class="metro-input" type="text" name="username" required
+                 value="{{ device.username if device else '' }}" autocomplete="off"/>
         </div>
         <div class="form-group">
-          <label>Пароль {% if device %}(оставьте пустым, чтобы не менять){% else %}*{% endif %}</label>
-          <input type="password" name="password" {% if not device %}required{% endif %} autocomplete="new-password" />
-        </div>
-      </div>
-
-      <div class="form-row">
-        <div class="form-group">
-          <label>Enable Secret (опционально)</label>
-          <input type="password" name="enable_secret" autocomplete="new-password" />
+          <label class="form-label">
+            {{ t('dev.password') }}
+            {% if device %}<span class="text-dim small"> {{ t('dev.password_hint') }}</span>{% else %}*{% endif %}
+          </label>
+          <input class="metro-input" type="password" name="password"
+                 {% if not device %}required{% endif %} autocomplete="new-password"/>
         </div>
       </div>
 
-      <div class="form-divider">Конфигурация бэкапа</div>
+      <div class="form-group">
+        <label class="form-label">{{ t('dev.enable_secret') }}</label>
+        <input class="metro-input" type="password" name="enable_secret" autocomplete="new-password"/>
+      </div>
+
+      <div class="form-divider">{{ t('dev.backup_config') }}</div>
 
       <div class="form-row">
         <div class="form-group">
-          <label>Группа</label>
-          <select name="group_id">
-            <option value="">— нет —</option>
+          <label class="form-label">{{ t('dev.group') }}</label>
+          <select class="metro-select" name="group_id">
+            <option value="">{{ t('dev.no_group') }}</option>
             {% for g in groups %}
             <option value="{{ g.id }}" {% if device and device.group_id == g.id %}selected{% endif %}>{{ g.name }}</option>
             {% endfor %}
           </select>
         </div>
         <div class="form-group">
-          <label>Шаблон команд</label>
-          <select name="template_id">
-            <option value="">— нет —</option>
-            {% for t in templates %}
-            <option value="{{ t.id }}" {% if device and device.template_id == t.id %}selected{% endif %}>{{ t.name }}</option>
+          <label class="form-label">{{ t('dev.template') }}</label>
+          <select class="metro-select" name="template_id">
+            <option value="">{{ t('dev.no_template') }}</option>
+            {% for tmpl in templates %}
+            <option value="{{ tmpl.id }}" {% if device and device.template_id == tmpl.id %}selected{% endif %}>{{ tmpl.name }}</option>
             {% endfor %}
           </select>
         </div>
       </div>
 
-      <div class="form-row">
-        <div class="form-group">
-          <label>Custom Cron (пусто = глобальный)</label>
-          <input type="text" name="custom_cron" value="{{ device.custom_cron if device else '' }}" placeholder="0 3 * * *" />
-          <small class="form-hint">Формат: минута час день месяц день_недели</small>
-        </div>
-        <div class="form-group form-group-sm" style="align-self:end; padding-bottom:0.5rem;">
-          <label class="checkbox-label">
-            <input type="checkbox" name="backup_enabled" value="true"
-              {% if not device or device.backup_enabled %}checked{% endif %} />
-            Бэкап включён
-          </label>
-        </div>
+      <div class="form-group">
+        <label class="form-label">{{ t('dev.custom_cron') }}</label>
+        <input class="metro-input" type="text" name="custom_cron"
+               value="{{ device.custom_cron if device else '' }}" placeholder="0 3 * * *"/>
+        <span class="form-hint">{{ t('dev.cron_hint') }}</span>
       </div>
 
       <div class="form-group">
-        <label>Описание</label>
-        <textarea name="description" rows="2" placeholder="Примечания…">{{ device.description if device else '' }}</textarea>
+        <label class="metro-checkbox">
+          <input type="hidden" name="backup_enabled" value="false"/>
+          <input type="checkbox" name="backup_enabled" value="true"
+            {% if not device or device.backup_enabled %}checked{% endif %}/>
+          <span class="checkbox-custom"></span>
+          {{ t('dev.backup_enabled') }}
+        </label>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">{{ t('dev.description') }}</label>
+        <textarea class="metro-textarea" name="description" rows="2"
+                  style="min-height:60px">{{ device.description if device else '' }}</textarea>
       </div>
 
       <div class="form-actions">
-        <button type="submit" class="btn btn-primary">💾 Сохранить</button>
-        <a href="/inventory/" class="btn btn-secondary">Отмена</a>
+        <button type="submit" class="metro-btn primary">{{ t('dev.save') }}</button>
+        <a href="/inventory/" class="metro-btn secondary">{{ t('dev.cancel') }}</a>
       </div>
     </form>
   </div>
-</section>
+</div>
 {% endblock %}

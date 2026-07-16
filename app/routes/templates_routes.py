@@ -7,36 +7,53 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
+from app.auth import require_auth
 from app.database import get_db
+from app.i18n import make_translator
 from app.models import BackupTemplate
 
 router = APIRouter(prefix="/templates")
 templates = Jinja2Templates(directory="templates")
 
 
+def _lang(request: Request) -> str:
+    return request.cookies.get("lang", "ru")
+
+
 @router.get("/", response_class=HTMLResponse)
-async def templates_list(request: Request, db: Session = Depends(get_db)):
+async def templates_list(
+    request: Request,
+    db: Session = Depends(get_db),
+    user=Depends(require_auth),
+):
+    lang = _lang(request)
     tmplates = db.query(BackupTemplate).order_by(BackupTemplate.name).all()
-    return templates.TemplateResponse(
-        "templates_list.html",
-        {
-            "request": request,
-            "templates": tmplates,
-            "page_title": "Backup Templates",
-        },
-    )
+    return templates.TemplateResponse("templates_list.html", {
+        "request": request,
+        "t": make_translator(lang),
+        "lang": lang,
+        "theme": request.cookies.get("theme", "dark"),
+        "user": user,
+        "templates": tmplates,
+        "page_title": "tpl.title",
+    })
 
 
 @router.get("/add", response_class=HTMLResponse)
-async def template_add_form(request: Request):
-    return templates.TemplateResponse(
-        "template_form.html",
-        {
-            "request": request,
-            "template": None,
-            "page_title": "Add Template",
-        },
-    )
+async def template_add_form(
+    request: Request,
+    user=Depends(require_auth),
+):
+    lang = _lang(request)
+    return templates.TemplateResponse("template_form.html", {
+        "request": request,
+        "t": make_translator(lang),
+        "lang": lang,
+        "theme": request.cookies.get("theme", "dark"),
+        "user": user,
+        "template": None,
+        "page_title": "tpl.add_title",
+    })
 
 
 @router.post("/add")
@@ -46,6 +63,7 @@ async def template_add(
     device_type: str = Form(""),
     commands: str = Form(...),
     db: Session = Depends(get_db),
+    user=Depends(require_auth),
 ):
     tmpl = BackupTemplate(
         name=name,
@@ -59,18 +77,25 @@ async def template_add(
 
 
 @router.get("/{template_id}/edit", response_class=HTMLResponse)
-async def template_edit_form(template_id: int, request: Request, db: Session = Depends(get_db)):
+async def template_edit_form(
+    template_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+    user=Depends(require_auth),
+):
+    lang = _lang(request)
     tmpl = db.get(BackupTemplate, template_id)
     if not tmpl:
         raise HTTPException(status_code=404, detail="Template not found")
-    return templates.TemplateResponse(
-        "template_form.html",
-        {
-            "request": request,
-            "template": tmpl,
-            "page_title": f"Edit Template: {tmpl.name}",
-        },
-    )
+    return templates.TemplateResponse("template_form.html", {
+        "request": request,
+        "t": make_translator(lang),
+        "lang": lang,
+        "theme": request.cookies.get("theme", "dark"),
+        "user": user,
+        "template": tmpl,
+        "page_title": "tpl.edit_title",
+    })
 
 
 @router.post("/{template_id}/edit")
@@ -81,6 +106,7 @@ async def template_edit(
     device_type: str = Form(""),
     commands: str = Form(...),
     db: Session = Depends(get_db),
+    user=Depends(require_auth),
 ):
     tmpl = db.get(BackupTemplate, template_id)
     if not tmpl:
@@ -94,7 +120,11 @@ async def template_edit(
 
 
 @router.post("/{template_id}/delete")
-async def template_delete(template_id: int, db: Session = Depends(get_db)):
+async def template_delete(
+    template_id: int,
+    db: Session = Depends(get_db),
+    user=Depends(require_auth),
+):
     tmpl = db.get(BackupTemplate, template_id)
     if tmpl:
         db.delete(tmpl)

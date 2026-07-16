@@ -2,14 +2,18 @@
 routes/inventory.py — Device inventory CRUD + manual backup trigger.
 """
 
+from datetime import datetime
+from typing import Optional
+
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
-from typing import Optional
 
+from app.auth import require_auth
 from app.crypto import encrypt, decrypt
 from app.database import get_db
+from app.i18n import make_translator
 from app.models import BackupJob, BackupJobStatus, BackupTemplate, Device, DeviceGroup
 from app.scheduler import refresh_custom_device_jobs
 
@@ -24,42 +28,82 @@ NETMIKO_TYPES = [
 ]
 
 
+def _lang(request: Request) -> str:
+    return request.cookies.get("lang", "ru")
+
+
+def _last_config_dates(device_ids: list, db: Session) -> dict:
+    """Return {device_id: finished_at} for the last successful backup per device."""
+    if not device_ids:
+        return {}
+    from sqlalchemy import func
+    subq = (
+        db.query(
+            BackupJob.device_id,
+            func.max(BackupJob.finished_at).label("last_date")
+        )
+        .filter(
+            BackupJob.device_id.in_(device_ids),
+            BackupJob.status == BackupJobStatus.SUCCESS,
+        )
+        .group_by(BackupJob.device_id)
+        .subquery()
+    )
+    rows = db.query(subq).all()
+    return {row.device_id: row.last_date for row in rows}
+
+
 @router.get("/", response_class=HTMLResponse)
-async def inventory_list(request: Request, db: Session = Depends(get_db)):
+async def inventory_list(
+    request: Request,
+    db: Session = Depends(get_db),
+    user=Depends(require_auth),
+):
+    lang = _lang(request)
     devices = db.query(Device).order_by(Device.name).all()
     groups = db.query(DeviceGroup).order_by(DeviceGroup.name).all()
-    return templates.TemplateResponse(
-        "inventory.html",
-        {
-            "request": request,
-            "devices": devices,
-            "groups": groups,
-            "page_title": "Inventory",
-        },
-    )
+    last_dates = _last_config_dates([d.id for d in devices], db)
+    return templates.TemplateResponse("inventory.html", {
+        "request": request,
+        "t": make_translator(lang),
+        "lang": lang,
+        "theme": request.cookies.get("theme", "dark"),
+        "user": user,
+        "devices": devices,
+        "groups": groups,
+        "last_dates": last_dates,
+        "page_title": "inventory",
+    })
 
 
 @router.get("/add", response_class=HTMLResponse)
-async def device_add_form(request: Request, db: Session = Depends(get_db)):
+async def device_add_form(
+    request: Request,
+    db: Session = Depends(get_db),
+    user=Depends(require_auth),
+):
+    lang = _lang(request)
     groups = db.query(DeviceGroup).order_by(DeviceGroup.name).all()
     tmplates = db.query(BackupTemplate).order_by(BackupTemplate.name).all()
-    return templates.TemplateResponse(
-        "device_form.html",
-        {
-            "request": request,
-            "device": None,
-            "groups": groups,
-            "templates": tmplates,
-            "netmiko_types": NETMIKO_TYPES,
-            "page_title": "Add Device",
-        },
-    )
+    return templates.TemplateResponse("device_form.html", {
+        "request": request,
+        "t": make_translator(lang),
+        "lang": lang,
+        "theme": request.cookies.get("theme", "dark"),
+        "user": user,
+        "device": None,
+        "groups": groups,
+        "templates": tmplates,
+        "netmiko_types": NETMIKO_TYPES,
+        "page_title": "dev.add_title",
+    })
 
 
 @router.post("/add")
 async def device_add(
     request: Request,
     db: Session = Depends(get_db),
+    user=Depends(require_auth),
     name: str = Form(...),
     hostname: str = Form(...),
     port: int = Form(22),
@@ -71,9 +115,10 @@ async def device_add(
     group_id: Optional[int] = Form(None),
     template_id: Optional[int] = Form(None),
     custom_cron: str = Form(""),
-    backup_enabled: bool = Form(True),
+    backup_enabled: Optional[str] = Form(None),
     description: str = Form(""),
 ):
+    from app.crypto import encrypt
     device = Device(
         name=name,
         hostname=hostname,
@@ -86,7 +131,7 @@ async def device_add(
         group_id=group_id or None,
         template_id=template_id or None,
         custom_cron=custom_cron.strip() or None,
-        backup_enabled=backup_enabled,
+        backup_enabled=backup_enabled == "true",
         description=description,
     )
     db.add(device)
@@ -96,13 +141,26 @@ async def device_add(
 
 
 @router.get("/{device_id}/edit", response_class=HTMLResponse)
-async def device_edit_form(device_id: int, request: Request, db: Session = Depends(get_db)):
+async def device_edit_form(
+    device_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+    user=Depends(require_auth),
+):
+    lang = _lang(request)
     device = db.get(Device, device_id)
     if not device:
         raise HTTPException(status_code=404, detail="Device not found")
+
     groups = db.query(DeviceGroup).order_by(DeviceGroup.name).all()
     tmplates = db.query(BackupTemplate).order_by(BackupTemplate.name).all()
-    # Decrypt for display
+
+    # Decrypt username — if master key not configured, show placeholder
+    try:
+        plain_username = decrypt(device.username)
+    except (RuntimeError, ValueError):
+        plain_username = "*** key not configured ***"
+
     device_data = {
         "id": device.id,
         "name": device.name,
@@ -110,8 +168,8 @@ async def device_edit_form(device_id: int, request: Request, db: Session = Depen
         "port": device.port,
         "connection_type": device.connection_type.value,
         "netmiko_device_type": device.netmiko_device_type,
-        "username": decrypt(device.username),
-        "password": "",  # Never pre-fill password
+        "username": plain_username,
+        "password": "",
         "enable_secret": "",
         "group_id": device.group_id,
         "template_id": device.template_id,
@@ -119,17 +177,18 @@ async def device_edit_form(device_id: int, request: Request, db: Session = Depen
         "backup_enabled": device.backup_enabled,
         "description": device.description or "",
     }
-    return templates.TemplateResponse(
-        "device_form.html",
-        {
-            "request": request,
-            "device": device_data,
-            "groups": groups,
-            "templates": tmplates,
-            "netmiko_types": NETMIKO_TYPES,
-            "page_title": f"Edit Device: {device.name}",
-        },
-    )
+    return templates.TemplateResponse("device_form.html", {
+        "request": request,
+        "t": make_translator(lang),
+        "lang": lang,
+        "theme": request.cookies.get("theme", "dark"),
+        "user": user,
+        "device": device_data,
+        "groups": groups,
+        "templates": tmplates,
+        "netmiko_types": NETMIKO_TYPES,
+        "page_title": "dev.edit_title",
+    })
 
 
 @router.post("/{device_id}/edit")
@@ -137,6 +196,7 @@ async def device_edit(
     device_id: int,
     request: Request,
     db: Session = Depends(get_db),
+    user=Depends(require_auth),
     name: str = Form(...),
     hostname: str = Form(...),
     port: int = Form(22),
@@ -148,7 +208,7 @@ async def device_edit(
     group_id: Optional[int] = Form(None),
     template_id: Optional[int] = Form(None),
     custom_cron: str = Form(""),
-    backup_enabled: bool = Form(True),
+    backup_enabled: Optional[str] = Form(None),
     description: str = Form(""),
 ):
     device = db.get(Device, device_id)
@@ -161,7 +221,6 @@ async def device_edit(
     device.connection_type = connection_type
     device.netmiko_device_type = netmiko_device_type
     device.username = encrypt(username)
-    # Only update password if a new one was provided
     if password:
         device.password = encrypt(password)
     if enable_secret:
@@ -169,7 +228,7 @@ async def device_edit(
     device.group_id = group_id or None
     device.template_id = template_id or None
     device.custom_cron = custom_cron.strip() or None
-    device.backup_enabled = backup_enabled
+    device.backup_enabled = backup_enabled == "true"
     device.description = description
 
     db.commit()
@@ -178,7 +237,11 @@ async def device_edit(
 
 
 @router.post("/{device_id}/delete")
-async def device_delete(device_id: int, db: Session = Depends(get_db)):
+async def device_delete(
+    device_id: int,
+    db: Session = Depends(get_db),
+    user=Depends(require_auth),
+):
     device = db.get(Device, device_id)
     if not device:
         raise HTTPException(status_code=404, detail="Device not found")
@@ -189,27 +252,29 @@ async def device_delete(device_id: int, db: Session = Depends(get_db)):
 
 
 @router.post("/{device_id}/backup")
-async def device_manual_backup(device_id: int, db: Session = Depends(get_db)):
-    """Trigger a manual backup for a single device (runs in background thread)."""
+async def device_manual_backup(
+    device_id: int,
+    db: Session = Depends(get_db),
+    user=Depends(require_auth),
+):
     device = db.get(Device, device_id)
     if not device:
         raise HTTPException(status_code=404, detail="Device not found")
 
     import threading
     from app.backup_engine import run_backup_for_device
-
-    thread = threading.Thread(
-        target=run_backup_for_device,
-        args=(device_id, "manual"),
-        daemon=True,
-    )
-    thread.start()
-    return RedirectResponse(url=f"/inventory/", status_code=303)
+    threading.Thread(target=run_backup_for_device, args=(device_id, "manual"), daemon=True).start()
+    return RedirectResponse(url="/inventory/", status_code=303)
 
 
 @router.get("/{device_id}/jobs", response_class=HTMLResponse)
-async def device_jobs(device_id: int, request: Request, db: Session = Depends(get_db)):
-    """Show backup job history for a device."""
+async def device_jobs(
+    device_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+    user=Depends(require_auth),
+):
+    lang = _lang(request)
     device = db.get(Device, device_id)
     if not device:
         raise HTTPException(status_code=404, detail="Device not found")
@@ -220,28 +285,37 @@ async def device_jobs(device_id: int, request: Request, db: Session = Depends(ge
         .limit(50)
         .all()
     )
-    return templates.TemplateResponse(
-        "device_jobs.html",
-        {
-            "request": request,
-            "device": device,
-            "jobs": jobs,
-            "page_title": f"Jobs: {device.name}",
-        },
-    )
+    return templates.TemplateResponse("device_jobs.html", {
+        "request": request,
+        "t": make_translator(lang),
+        "lang": lang,
+        "theme": request.cookies.get("theme", "dark"),
+        "user": user,
+        "device": device,
+        "jobs": jobs,
+        "page_title": "job.title",
+    })
 
 
-# ---------------------------------------------------------------------------
-# Groups CRUD
-# ---------------------------------------------------------------------------
+# --- Groups ---
 
 @router.get("/groups", response_class=HTMLResponse)
-async def groups_list(request: Request, db: Session = Depends(get_db)):
+async def groups_list(
+    request: Request,
+    db: Session = Depends(get_db),
+    user=Depends(require_auth),
+):
+    lang = _lang(request)
     groups = db.query(DeviceGroup).order_by(DeviceGroup.name).all()
-    return templates.TemplateResponse(
-        "groups.html",
-        {"request": request, "groups": groups, "page_title": "Device Groups"},
-    )
+    return templates.TemplateResponse("groups.html", {
+        "request": request,
+        "t": make_translator(lang),
+        "lang": lang,
+        "theme": request.cookies.get("theme", "dark"),
+        "user": user,
+        "groups": groups,
+        "page_title": "grp.title",
+    })
 
 
 @router.post("/groups/add")
@@ -249,6 +323,7 @@ async def group_add(
     name: str = Form(...),
     description: str = Form(""),
     db: Session = Depends(get_db),
+    user=Depends(require_auth),
 ):
     group = DeviceGroup(name=name, description=description)
     db.add(group)
@@ -257,7 +332,11 @@ async def group_add(
 
 
 @router.post("/groups/{group_id}/delete")
-async def group_delete(group_id: int, db: Session = Depends(get_db)):
+async def group_delete(
+    group_id: int,
+    db: Session = Depends(get_db),
+    user=Depends(require_auth),
+):
     group = db.get(DeviceGroup, group_id)
     if group:
         db.delete(group)

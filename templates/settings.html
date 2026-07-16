@@ -1,65 +1,86 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="two-col">
 
-  <!-- Webhooks section -->
-  <section class="card">
-    <div class="card-header"><h2>Webhooks уведомлений</h2></div>
-    <div class="card-body">
+<!-- Webhooks + Scheduler -->
+<div class="two-col" style="margin-bottom:var(--spacing-m)">
+
+  <!-- Webhooks -->
+  <div class="panel">
+    <div class="panel-header"><span class="panel-title">{{ t('set.webhooks') }}</span></div>
+    <div class="panel-body">
 
       <!-- Add webhook form -->
-      <form method="post" action="/settings/webhooks/add" class="form" style="margin-bottom:1.5rem; padding-bottom:1.5rem; border-bottom:1px solid var(--border);">
-        <h3 style="font-size:0.9rem; margin-bottom:0.75rem;">Добавить webhook</h3>
+      <form method="post" action="/settings/webhooks/add" class="metro-form"
+            style="padding-bottom:var(--spacing-m); border-bottom:1px solid var(--border); margin-bottom:var(--spacing-m)">
         <div class="form-group">
-          <label>Название</label>
-          <input type="text" name="name" required placeholder="Rocket.Chat alerts" />
+          <label class="form-label">{{ t('set.webhook_name') }} *</label>
+          <input class="metro-input" type="text" name="name" required placeholder="Rocket.Chat alerts"/>
         </div>
         <div class="form-group">
-          <label>URL *</label>
-          <input type="url" name="url" required placeholder="https://chat.example.com/hooks/TOKEN" />
+          <label class="form-label">{{ t('set.webhook_url') }} *</label>
+          <input class="metro-input" type="url" name="url" required
+                 placeholder="https://chat.example.com/hooks/TOKEN"/>
         </div>
-        <div class="form-row">
-          <label class="checkbox-label">
-            <input type="checkbox" name="on_backup_fail" value="true" checked /> Ошибки бэкапа
+        <div style="display:flex; gap:var(--spacing-m); flex-wrap:wrap; margin-bottom:8px">
+          <label class="metro-checkbox">
+            <input type="hidden" name="on_backup_fail" value="false"/>
+            <input type="checkbox" name="on_backup_fail" value="true" checked/>
+            <span class="checkbox-custom"></span>
+            {{ t('set.on_backup_fail') }}
           </label>
-          <label class="checkbox-label">
-            <input type="checkbox" name="on_ping_fail" value="true" checked /> Устройство недоступно
+          <label class="metro-checkbox">
+            <input type="hidden" name="on_ping_fail" value="false"/>
+            <input type="checkbox" name="on_ping_fail" value="true" checked/>
+            <span class="checkbox-custom"></span>
+            {{ t('set.on_ping_fail') }}
+          </label>
+          <label class="metro-checkbox">
+            <input type="hidden" name="send_diff" value="false"/>
+            <input type="checkbox" name="send_diff" value="true"/>
+            <span class="checkbox-custom"></span>
+            {{ t('set.send_diff') }}
           </label>
         </div>
-        <div class="form-actions">
-          <button type="submit" class="btn btn-primary">Добавить</button>
-        </div>
+        <button type="submit" class="metro-btn primary sm">{{ t('set.add') }}</button>
       </form>
 
       {% if webhooks %}
-      <table class="data-table">
-        <thead><tr><th>Название</th><th>URL</th><th>Триггеры</th><th>Статус</th><th></th></tr></thead>
+      <table class="metro-table">
+        <thead>
+          <tr>
+            <th>{{ t('set.webhook_name') }}</th>
+            <th>{{ t('set.triggers') }}</th>
+            <th>{{ t('set.webhook_url') }}</th>
+            <th></th>
+          </tr>
+        </thead>
         <tbody>
           {% for wh in webhooks %}
           <tr>
-            <td><strong>{{ wh.name }}</strong></td>
-            <td class="monospace small" style="max-width:200px; overflow:hidden; text-overflow:ellipsis;">
-              {{ wh.url[:60] }}{% if wh.url|length > 60 %}…{% endif %}
+            <td>
+              <strong>{{ wh.name }}</strong><br>
+              {% if wh.enabled %}
+                <span class="badge green">{{ t('set.active') }}</span>
+              {% else %}
+                <span class="badge gray">{{ t('set.disabled') }}</span>
+              {% endif %}
             </td>
             <td class="small">
-              {% if wh.on_backup_fail %}<span class="badge badge-gray">backup</span>{% endif %}
-              {% if wh.on_ping_fail %}<span class="badge badge-gray">ping</span>{% endif %}
+              {% if wh.on_backup_fail %}<span class="badge blue">backup</span> {% endif %}
+              {% if wh.on_ping_fail %}<span class="badge orange">ping</span> {% endif %}
+              {% if wh.send_diff %}<span class="badge gray">diff</span> {% endif %}
             </td>
-            <td>
-              {% if wh.enabled %}
-                <span class="badge badge-green">✓ Active</span>
-              {% else %}
-                <span class="badge badge-gray">✗ Disabled</span>
-              {% endif %}
+            <td class="mono small" style="max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap">
+              {{ wh.url[:50] }}{% if wh.url|length > 50 %}…{% endif %}
             </td>
             <td class="actions">
               <form method="post" action="/settings/webhooks/{{ wh.id }}/toggle" style="display:inline">
-                <button type="submit" class="btn btn-xs btn-secondary">{{ '⏸' if wh.enabled else '▶' }}</button>
+                <button type="submit" class="metro-btn secondary xs">{{ '⏸' if wh.enabled else '▶' }}</button>
               </form>
               <form method="post" action="/settings/webhooks/{{ wh.id }}/delete" style="display:inline"
-                    onsubmit="return confirm('Удалить?')">
-                <button type="submit" class="btn btn-xs btn-danger">✕</button>
+                    data-confirm="{{ t('set.delete') }}?">
+                <button type="submit" class="metro-btn danger xs">✕</button>
               </form>
             </td>
           </tr>
@@ -67,33 +88,122 @@
         </tbody>
       </table>
       {% else %}
-        <div class="empty-state small">Webhooks не настроены.</div>
+        <div class="empty-state sm">{{ t('set.no_webhooks') }}</div>
       {% endif %}
     </div>
-  </section>
+  </div>
 
-  <!-- Scheduler info -->
-  <section class="card">
-    <div class="card-header"><h2>Планировщик задач</h2></div>
-    <div class="card-body table-wrapper">
+  <!-- Scheduler -->
+  <div class="panel">
+    <div class="panel-header"><span class="panel-title">{{ t('set.scheduler') }}</span></div>
+    <div class="table-wrap">
       {% if scheduler_jobs %}
-      <table class="data-table">
-        <thead><tr><th>ID</th><th>Задача</th><th>Следующий запуск</th></tr></thead>
+      <table class="metro-table">
+        <thead>
+          <tr>
+            <th>{{ t('set.job_id') }}</th>
+            <th>{{ t('set.job_name') }}</th>
+            <th>{{ t('set.next_run') }}</th>
+          </tr>
+        </thead>
         <tbody>
           {% for job in scheduler_jobs %}
           <tr>
-            <td class="monospace small">{{ job.id }}</td>
-            <td>{{ job.name }}</td>
-            <td class="monospace small">{{ job.next_run }}</td>
+            <td class="mono small">{{ job.id }}</td>
+            <td class="small">{{ job.name }}</td>
+            <td class="mono small">{{ job.next_run[:16] if job.next_run != 'N/A' else 'N/A' }}</td>
           </tr>
           {% endfor %}
         </tbody>
       </table>
       {% else %}
-        <div class="empty-state small">Планировщик не запущен или задач нет.</div>
+        <div class="empty-state sm">{{ t('set.no_jobs') }}</div>
       {% endif %}
     </div>
-  </section>
+  </div>
 
 </div>
+
+<!-- LDAP Settings -->
+<div class="panel">
+  <div class="panel-header">
+    <span class="panel-title">{{ t('ldap.title') }}</span>
+  </div>
+  <div class="panel-body">
+    <form method="post" action="/settings/ldap/save" class="metro-form">
+
+      <div class="form-group">
+        <label class="metro-checkbox">
+          <input type="hidden" name="ldap_enabled" value="false"/>
+          <input type="checkbox" name="ldap_enabled" value="true"
+            {% if app_settings.get('ldap_enabled') == 'true' %}checked{% endif %}/>
+          <span class="checkbox-custom"></span>
+          {{ t('ldap.enabled') }}
+        </label>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">{{ t('ldap.server') }}</label>
+          <input class="metro-input" type="text" name="ldap_server"
+                 value="{{ app_settings.get('ldap_server', '') }}"
+                 placeholder="ldap://dc.example.com"/>
+        </div>
+        <div class="form-group" style="max-width:140px">
+          <label class="form-label">{{ t('ldap.port') }}</label>
+          <input class="metro-input" type="number" name="ldap_port"
+                 value="{{ app_settings.get('ldap_port', '389') }}"/>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="metro-checkbox">
+          <input type="hidden" name="ldap_use_ssl" value="false"/>
+          <input type="checkbox" name="ldap_use_ssl" value="true"
+            {% if app_settings.get('ldap_use_ssl') == 'true' %}checked{% endif %}/>
+          <span class="checkbox-custom"></span>
+          {{ t('ldap.use_ssl') }}
+        </label>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">{{ t('ldap.base_dn') }}</label>
+          <input class="metro-input" type="text" name="ldap_base_dn"
+                 value="{{ app_settings.get('ldap_base_dn', '') }}"
+                 placeholder="dc=example,dc=com"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">{{ t('ldap.filter') }}</label>
+          <input class="metro-input" type="text" name="ldap_search_filter"
+                 value="{{ app_settings.get('ldap_search_filter', '(sAMAccountName={username})') }}"/>
+          <span class="form-hint">{{ t('ldap.hint') }}</span>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">{{ t('ldap.bind_dn') }}</label>
+          <input class="metro-input" type="text" name="ldap_bind_dn"
+                 value="{{ app_settings.get('ldap_bind_dn', '') }}"
+                 placeholder="cn=svc-dumper,ou=services,dc=example,dc=com"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">{{ t('ldap.bind_password') }}</label>
+          <input class="metro-input" type="password" name="ldap_bind_password"
+                 placeholder="● ● ● ● ● ●"/>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" class="metro-btn primary">{{ t('ldap.save') }}</button>
+        <button type="button" class="metro-btn secondary" id="ldap-test-btn" onclick="testLdap()">
+          {{ t('ldap.test') }}
+        </button>
+      </div>
+      <div class="ldap-result" id="ldap-result"></div>
+    </form>
+  </div>
+</div>
+
 {% endblock %}

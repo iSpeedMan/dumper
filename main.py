@@ -1,36 +1,28 @@
 """
 main.py — Dumper application entry point.
-
-Starts a FastAPI app with:
-  - Jinja2 SSR templates
-  - SQLite database (auto-initialized on startup)
-  - APScheduler background jobs (ping sweep + backup cron)
-  - Static file serving
-
-Usage:
-  python main.py
-  uvicorn main:app --host 0.0.0.0 --port 5000 --workers 1
-
-Production (systemd): see dumper.service
 """
 
+import base64
 import logging
+import os
 import sys
 from contextlib import asynccontextmanager
 from pathlib import Path
 
 import uvicorn
 from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from starlette.middleware.sessions import SessionMiddleware
 
+from app.auth import _AuthRedirect, auth_redirect_handler
 from app.config import settings
 from app.database import init_db
 from app.scheduler import start_scheduler, stop_scheduler
 
 # ---------------------------------------------------------------------------
-# Logging configuration
+# Logging
 # ---------------------------------------------------------------------------
 logging.basicConfig(
     level=logging.DEBUG if settings.app.debug else logging.INFO,
@@ -38,117 +30,146 @@ logging.basicConfig(
     datefmt="%Y-%m-%d %H:%M:%S",
     stream=sys.stdout,
 )
-
-# Reduce verbosity of noisy libraries
 logging.getLogger("apscheduler").setLevel(logging.WARNING)
-logging.getLogger("sqlalchemy.engine").setLevel(
-    logging.INFO if settings.app.debug else logging.WARNING
-)
+logging.getLogger("sqlalchemy.engine").setLevel(logging.WARNING)
 logging.getLogger("paramiko").setLevel(logging.WARNING)
 
 logger = logging.getLogger("dumper")
 
 
 # ---------------------------------------------------------------------------
-# App lifespan (startup / shutdown)
+# Auto-generate master key if missing
+# ---------------------------------------------------------------------------
+
+def _ensure_master_key() -> None:
+    """
+    If encryption.master_key is not set (still CHANGE_ME), generate one
+    and save it back to config.yaml so the app can run immediately.
+    Logs a prominent warning to remind the admin to back it up.
+    """
+    if not settings.encryption.master_key.startswith("CHANGE_ME"):
+        return  # Already configured
+
+    new_key = base64.urlsafe_b64encode(os.urandom(32)).decode()
+    settings.encryption.master_key = new_key
+
+    # Patch the cache so crypto.py picks it up
+    import app.crypto as _crypto
+    _crypto._KEY_CACHE = None  # Force re-derive
+
+    # Write back to config.yaml
+    config_path = Path("config.yaml")
+    if config_path.exists():
+        content = config_path.read_text()
+        content = content.replace(
+            "master_key: \"CHANGE_ME_base64_encoded_32byte_key\"",
+            f'master_key: "{new_key}"',
+        )
+        config_path.write_text(content)
+
+    logger.warning(
+        "⚠  Auto-generated encryption master key: %s\n"
+        "   IMPORTANT: Back this up! If lost, all stored credentials are unreadable.\n"
+        "   Edit config.yaml to set a permanent key.",
+        new_key,
+    )
+
+
+# ---------------------------------------------------------------------------
+# App lifespan
 # ---------------------------------------------------------------------------
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """
-    FastAPI lifespan context manager.
-    - Runs startup logic before 'yield'
-    - Runs shutdown logic after 'yield'
-    """
-    # ── Startup ──────────────────────────────────────────────────────────────
     logger.info("Starting Dumper v1.0.0")
-    logger.info("Database: %s", settings.database.path)
-    logger.info("Git repo: %s", settings.git.repo_path)
-
-    # Initialize database tables
+    _ensure_master_key()
     init_db()
     logger.info("Database initialized")
-
-    # Seed default backup templates if DB is empty
     _seed_default_templates()
-
-    # Start background scheduler (ping + backup jobs)
     try:
         start_scheduler()
     except Exception as exc:
         logger.warning("Scheduler startup warning: %s", exc)
-
-    logger.info("Dumper is ready — listening on %s:%d", settings.app.host, settings.app.port)
-
-    yield  # App is running
-
-    # ── Shutdown ─────────────────────────────────────────────────────────────
+    logger.info("Dumper ready — %s:%d", settings.app.host, settings.app.port)
+    yield
     stop_scheduler()
     logger.info("Dumper shutdown complete")
 
 
 # ---------------------------------------------------------------------------
-# FastAPI application
+# FastAPI app
 # ---------------------------------------------------------------------------
 
 app = FastAPI(
     title="Dumper",
-    description="Network configuration backup manager",
     version="1.0.0",
     docs_url="/api/docs" if settings.app.debug else None,
     redoc_url=None,
     lifespan=lifespan,
 )
 
+# Session middleware (must be added before routes)
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=settings.app.secret_key,
+    session_cookie="dumper_session",
+    max_age=60 * 60 * 8,   # 8 hours
+    https_only=False,       # Set True behind HTTPS proxy in production
+    same_site="lax",
+)
+
+# Auth redirect exception handler
+app.add_exception_handler(_AuthRedirect, auth_redirect_handler)
+
 # Static files
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
-# Register route blueprints
+# Routes
+from app.routes.auth_routes import router as auth_router
 from app.routes.dashboard import router as dashboard_router
 from app.routes.inventory import router as inventory_router
 from app.routes.templates_routes import router as templates_router
 from app.routes.diff_viewer import router as diff_router
 from app.routes.settings import router as settings_router
 
+app.include_router(auth_router)
 app.include_router(dashboard_router)
 app.include_router(inventory_router)
 app.include_router(templates_router)
 app.include_router(diff_router)
 app.include_router(settings_router)
 
-# ---------------------------------------------------------------------------
-# 404 handler
-# ---------------------------------------------------------------------------
 
-_jinja_templates = Jinja2Templates(directory="templates")
-
+# ---------------------------------------------------------------------------
+# Error handlers
+# ---------------------------------------------------------------------------
 
 @app.exception_handler(404)
-async def not_found_handler(request: Request, exc):
+async def not_found(request: Request, exc):
     return HTMLResponse(
-        content=f"""
-        <html><head><meta charset="utf-8"><title>404 — Dumper</title>
-        <style>body{{font-family:sans-serif;background:#0f1117;color:#e2e8f0;display:flex;
-        align-items:center;justify-content:center;height:100vh;flex-direction:column;gap:1rem;}}
-        a{{color:#4f8ef7;}}</style></head>
-        <body><h1>404</h1><p>Страница не найдена.</p><a href="/">← На главную</a></body></html>
-        """,
+        "<html><head><meta charset='utf-8'><title>404</title>"
+        "<style>body{font-family:sans-serif;background:#000;color:#fff;"
+        "display:flex;align-items:center;justify-content:center;"
+        "height:100vh;flex-direction:column;gap:1rem;}"
+        "a{color:#1283b9;}</style></head>"
+        "<body><h1 style='font-size:3rem;font-weight:300'>404</h1>"
+        "<p>страница не найдена</p><a href='/'>← на главную</a></body></html>",
         status_code=404,
     )
 
 
 @app.exception_handler(500)
-async def server_error_handler(request: Request, exc):
-    logger.exception("Unhandled 500 error: %s", exc)
+async def server_error(request: Request, exc):
+    logger.exception("Unhandled 500: %s", exc)
     return HTMLResponse(
-        content="""
-        <html><head><meta charset="utf-8"><title>500 — Dumper</title>
-        <style>body{{font-family:sans-serif;background:#0f1117;color:#e2e8f0;display:flex;
-        align-items:center;justify-content:center;height:100vh;flex-direction:column;gap:1rem;}}
-        a{{color:#4f8ef7;}}</style></head>
-        <body><h1>500</h1><p>Внутренняя ошибка сервера. Проверьте логи.</p>
-        <a href="/">← На главную</a></body></html>
-        """,
+        "<html><head><meta charset='utf-8'><title>500</title>"
+        "<style>body{font-family:sans-serif;background:#000;color:#fff;"
+        "display:flex;align-items:center;justify-content:center;"
+        "height:100vh;flex-direction:column;gap:1rem;}"
+        "a{color:#1283b9;}</style></head>"
+        "<body><h1 style='font-size:3rem;font-weight:300'>500</h1>"
+        "<p>внутренняя ошибка сервера. проверьте логи.</p>"
+        "<a href='/'>← на главную</a></body></html>",
         status_code=500,
     )
 
@@ -158,81 +179,37 @@ async def server_error_handler(request: Request, exc):
 # ---------------------------------------------------------------------------
 
 def _seed_default_templates() -> None:
-    """
-    Populate the database with sensible default backup templates
-    for the most common network device types.
-    Only runs if the templates table is empty.
-    """
     from app.database import SessionLocal
     from app.models import BackupTemplate
-
     db = SessionLocal()
     try:
         if db.query(BackupTemplate).count() > 0:
-            return  # Already seeded
-
+            return
         defaults = [
-            BackupTemplate(
-                name="Cisco IOS / IOS-XE",
-                description="Full running-config backup for Cisco IOS and IOS-XE",
-                device_type="cisco_ios",
-                commands="terminal length 0\nshow running-config\nshow version",
-            ),
-            BackupTemplate(
-                name="Cisco IOS-XR",
-                description="Running config for Cisco IOS-XR",
-                device_type="cisco_xr",
-                commands="terminal length 0\nshow running-config\nshow version",
-            ),
-            BackupTemplate(
-                name="Cisco NX-OS",
-                description="Running config for Cisco NX-OS (Nexus)",
-                device_type="cisco_nxos",
-                commands="terminal length 0\nshow running-config\nshow version",
-            ),
-            BackupTemplate(
-                name="Cisco ASA",
-                description="Running config for Cisco ASA firewall",
-                device_type="cisco_asa",
-                commands="terminal pager 0\nshow running-config\nshow version",
-            ),
-            BackupTemplate(
-                name="Juniper JunOS",
-                description="Full config for Juniper JunOS devices",
-                device_type="juniper_junos",
-                commands="set cli screen-length 0\nshow configuration | no-more\nshow version",
-            ),
-            BackupTemplate(
-                name="Arista EOS",
-                description="Running config for Arista EOS",
-                device_type="arista_eos",
-                commands="terminal length 0\nshow running-config\nshow version",
-            ),
-            BackupTemplate(
-                name="Huawei VRP",
-                description="Current config for Huawei VRP devices",
-                device_type="huawei",
-                commands="screen-length 0 temporary\ndisplay current-configuration\ndisplay version",
-            ),
-            BackupTemplate(
-                name="MikroTik RouterOS",
-                description="Full config export for MikroTik",
-                device_type="mikrotik_routeros",
-                commands="/export\n/system resource print",
-            ),
-            BackupTemplate(
-                name="HP Comware",
-                description="Running config for HP/H3C Comware",
-                device_type="hp_comware",
-                commands="screen-length disable\ndisplay current-configuration\ndisplay version",
-            ),
+            BackupTemplate(name="Cisco IOS / IOS-XE", description="Full running-config",
+                           device_type="cisco_ios",
+                           commands="terminal length 0\nshow running-config\nshow version"),
+            BackupTemplate(name="Cisco IOS-XR", device_type="cisco_xr",
+                           commands="terminal length 0\nshow running-config\nshow version"),
+            BackupTemplate(name="Cisco NX-OS", device_type="cisco_nxos",
+                           commands="terminal length 0\nshow running-config\nshow version"),
+            BackupTemplate(name="Cisco ASA", device_type="cisco_asa",
+                           commands="terminal pager 0\nshow running-config\nshow version"),
+            BackupTemplate(name="Juniper JunOS", device_type="juniper_junos",
+                           commands="set cli screen-length 0\nshow configuration | no-more\nshow version"),
+            BackupTemplate(name="Arista EOS", device_type="arista_eos",
+                           commands="terminal length 0\nshow running-config\nshow version"),
+            BackupTemplate(name="Huawei VRP", device_type="huawei",
+                           commands="screen-length 0 temporary\ndisplay current-configuration\ndisplay version"),
+            BackupTemplate(name="MikroTik RouterOS", device_type="mikrotik_routeros",
+                           commands="/export\n/system resource print"),
+            BackupTemplate(name="HP Comware", device_type="hp_comware",
+                           commands="screen-length disable\ndisplay current-configuration\ndisplay version"),
         ]
-
-        for tmpl in defaults:
-            db.add(tmpl)
+        for t in defaults:
+            db.add(t)
         db.commit()
         logger.info("Seeded %d default backup templates", len(defaults))
-
     except Exception as exc:
         logger.error("Template seeding failed: %s", exc)
         db.rollback()
@@ -241,7 +218,7 @@ def _seed_default_templates() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Direct run
+# Entry point
 # ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
@@ -250,7 +227,7 @@ if __name__ == "__main__":
         host=settings.app.host,
         port=settings.app.port,
         reload=settings.app.debug,
-        workers=1,  # SQLite + single process is safest
+        workers=1,
         log_level="debug" if settings.app.debug else "info",
-        access_log=settings.app.debug,
+        access_log=False,
     )
