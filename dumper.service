@@ -1,0 +1,52 @@
+# ==============================================================================
+# Dumper — systemd service unit
+#
+# Installation:
+#   sudo cp dumper.service /etc/systemd/system/dumper.service
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now dumper
+#
+# Logs:
+#   sudo journalctl -u dumper -f
+# ==============================================================================
+
+[Unit]
+Description=Dumper — Network Configuration Backup Manager
+Documentation=https://github.com/yourorg/dumper
+After=network.target network-online.target
+Wants=network-online.target
+
+[Service]
+# ── Process ──────────────────────────────────────────────────────────────────
+Type=simple
+WorkingDirectory=/opt/dumper
+ExecStart=/opt/dumper/venv/bin/python main.py
+Restart=on-failure
+RestartSec=5s
+TimeoutStartSec=30s
+TimeoutStopSec=30s
+
+# ── Security ─────────────────────────────────────────────────────────────────
+User=dumper
+Group=dumper
+# If running as root is required for raw ICMP sockets, use root
+# and grant CAP_NET_RAW instead:
+# AmbientCapabilities=CAP_NET_RAW
+
+# ── Environment ──────────────────────────────────────────────────────────────
+Environment=DUMPER_CONFIG=/opt/dumper/config.yaml
+# Keep master key in a separate secrets file, not in this unit:
+# EnvironmentFile=/etc/dumper/secrets.env
+
+# ── Resource limits ──────────────────────────────────────────────────────────
+LimitNOFILE=65536
+LimitNPROC=4096
+
+# ── Hardening ────────────────────────────────────────────────────────────────
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ReadWritePaths=/opt/dumper/data /opt/dumper/configs_repo
+
+[Install]
+WantedBy=multi-user.target

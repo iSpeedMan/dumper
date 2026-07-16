@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block header_actions %}
+  <a href="/inventory/" class="btn btn-secondary">← Инвентарь</a>
+{% endblock %}
+
+{% block content %}
+<div class="two-col-narrow">
+  <!-- Add group form -->
+  <section class="card">
+    <div class="card-header"><h2>Добавить группу</h2></div>
+    <div class="card-body">
+      <form method="post" action="/inventory/groups/add" class="form">
+        <div class="form-group">
+          <label>Название *</label>
+          <input type="text" name="name" required placeholder="Название группы" />
+        </div>
+        <div class="form-group">
+          <label>Описание</label>
+          <textarea name="description" rows="2" placeholder="Описание…"></textarea>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary">Добавить</button>
+        </div>
+      </form>
+    </div>
+  </section>
+
+  <!-- Groups list -->
+  <section class="card">
+    <div class="card-header"><h2>Группы ({{ groups|length }})</h2></div>
+    <div class="card-body table-wrapper">
+      {% if groups %}
+      <table class="data-table">
+        <thead><tr><th>Название</th><th>Описание</th><th>Устройств</th><th></th></tr></thead>
+        <tbody>
+          {% for g in groups %}
+          <tr>
+            <td><strong>{{ g.name }}</strong></td>
+            <td class="small">{{ g.description or '—' }}</td>
+            <td class="small">{{ g.devices|length }}</td>
+            <td>
+              <form method="post" action="/inventory/groups/{{ g.id }}/delete"
+                    onsubmit="return confirm('Удалить группу {{ g.name }}?')">
+                <button type="submit" class="btn btn-xs btn-danger">✕</button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+        <div class="empty-state">Групп ещё нет.</div>
+      {% endif %}
+    </div>
+  </section>
+</div>
+{% endblock %}

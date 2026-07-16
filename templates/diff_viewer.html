@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+
+{% block header_actions %}
+  <a href="/inventory/{{ device.id }}/jobs" class="btn btn-secondary">← Jobs</a>
+{% endblock %}
+
+{% block content %}
+<div class="diff-layout">
+
+  <!-- Left panel: commit history + compare form -->
+  <aside class="diff-sidebar card">
+    <div class="card-header"><h3>История коммитов</h3></div>
+    <div class="card-body">
+      {% if history %}
+        <form method="get" action="/diff/{{ device.id }}/compare" class="form">
+          <div class="form-group">
+            <label>Коммит A (старый)</label>
+            <select name="commit_a" class="monospace">
+              {% for c in history %}
+              <option value="{{ c.sha }}" {% if c.sha == commit_a %}selected{% endif %}>
+                {{ c.sha_short }} — {{ c.date[:16] }}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Коммит B (новый)</label>
+            <select name="commit_b" class="monospace">
+              {% for c in history %}
+              <option value="{{ c.sha }}" {% if c.sha == commit_b %}selected{% endif %}>
+                {{ c.sha_short }} — {{ c.date[:16] }}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+          <button type="submit" class="btn btn-primary" style="width:100%">Сравнить</button>
+        </form>
+
+        <div style="margin-top:1.5rem;">
+          <h4 style="font-size:0.8rem; text-transform:uppercase; color:var(--text-muted);">Коммиты</h4>
+          <ul class="commit-list">
+            {% for c in history %}
+            <li class="commit-item">
+              <span class="commit-sha">{{ c.sha_short }}</span>
+              <span class="commit-date small">{{ c.date[:16] }}</span>
+              <span class="commit-msg small">{{ c.message }}</span>
+            </li>
+            {% endfor %}
+          </ul>
+        </div>
+      {% else %}
+        <div class="empty-state small">Коммитов нет.</div>
+      {% endif %}
+    </div>
+  </aside>
+
+  <!-- Main panel: diff or current config -->
+  <main class="diff-main">
+    {% if diff_text %}
+      <section class="card">
+        <div class="card-header">
+          <h2>Diff: {{ commit_a[:8] }} → {{ commit_b[:8] }}</h2>
+        </div>
+        <div class="card-body">
+          <pre class="diff-output">{% for line in diff_text.splitlines() %}<span class="diff-line {% if line.startswith('+') and not line.startswith('+++') %}diff-add{% elif line.startswith('-') and not line.startswith('---') %}diff-del{% elif line.startswith('@@') %}diff-hunk{% endif %}">{{ line }}</span>
+{% endfor %}</pre>
+        </div>
+      </section>
+    {% else %}
+      <section class="card">
+        <div class="card-header"><h2>Текущий конфиг</h2></div>
+        <div class="card-body">
+          {% if current_config %}
+            <pre class="code-output">{{ current_config }}</pre>
+          {% else %}
+            <div class="empty-state">Конфиг ещё не снимался.</div>
+          {% endif %}
+        </div>
+      </section>
+    {% endif %}
+  </main>
+
+</div>
+{% endblock %}

@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+
+{% block header_actions %}
+  <a href="/inventory/" class="btn btn-secondary">← Назад</a>
+{% endblock %}
+
+{% block content %}
+<section class="card" style="max-width: 720px;">
+  <div class="card-header"><h2>{{ page_title }}</h2></div>
+  <div class="card-body">
+    <form method="post" action="/inventory/{{ device.id ~ '/edit' if device else 'add' }}" class="form">
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Имя устройства *</label>
+          <input type="text" name="name" required value="{{ device.name if device else '' }}" placeholder="core-sw-01" />
+        </div>
+        <div class="form-group">
+          <label>Хост / IP *</label>
+          <input type="text" name="hostname" required value="{{ device.hostname if device else '' }}" placeholder="192.168.1.1" />
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group form-group-sm">
+          <label>Порт</label>
+          <input type="number" name="port" value="{{ device.port if device else 22 }}" min="1" max="65535" />
+        </div>
+        <div class="form-group form-group-sm">
+          <label>Протокол</label>
+          <select name="connection_type">
+            <option value="ssh" {% if not device or device.connection_type == 'ssh' %}selected{% endif %}>SSH</option>
+            <option value="telnet" {% if device and device.connection_type == 'telnet' %}selected{% endif %}>Telnet</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Тип Netmiko *</label>
+          <select name="netmiko_device_type">
+            {% for t in netmiko_types %}
+            <option value="{{ t }}" {% if device and device.netmiko_device_type == t %}selected{% endif %}>{{ t }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <div class="form-divider">Учётные данные</div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Логин *</label>
+          <input type="text" name="username" required value="{{ device.username if device else '' }}" autocomplete="off" />
+        </div>
+        <div class="form-group">
+          <label>Пароль {% if device %}(оставьте пустым, чтобы не менять){% else %}*{% endif %}</label>
+          <input type="password" name="password" {% if not device %}required{% endif %} autocomplete="new-password" />
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Enable Secret (опционально)</label>
+          <input type="password" name="enable_secret" autocomplete="new-password" />
+        </div>
+      </div>
+
+      <div class="form-divider">Конфигурация бэкапа</div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Группа</label>
+          <select name="group_id">
+            <option value="">— нет —</option>
+            {% for g in groups %}
+            <option value="{{ g.id }}" {% if device and device.group_id == g.id %}selected{% endif %}>{{ g.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Шаблон команд</label>
+          <select name="template_id">
+            <option value="">— нет —</option>
+            {% for t in templates %}
+            <option value="{{ t.id }}" {% if device and device.template_id == t.id %}selected{% endif %}>{{ t.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Custom Cron (пусто = глобальный)</label>
+          <input type="text" name="custom_cron" value="{{ device.custom_cron if device else '' }}" placeholder="0 3 * * *" />
+          <small class="form-hint">Формат: минута час день месяц день_недели</small>
+        </div>
+        <div class="form-group form-group-sm" style="align-self:end; padding-bottom:0.5rem;">
+          <label class="checkbox-label">
+            <input type="checkbox" name="backup_enabled" value="true"
+              {% if not device or device.backup_enabled %}checked{% endif %} />
+            Бэкап включён
+          </label>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Описание</label>
+        <textarea name="description" rows="2" placeholder="Примечания…">{{ device.description if device else '' }}</textarea>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary">💾 Сохранить</button>
+        <a href="/inventory/" class="btn btn-secondary">Отмена</a>
+      </div>
+    </form>
+  </div>
+</section>
+{% endblock %}

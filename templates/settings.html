@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="two-col">
+
+  <!-- Webhooks section -->
+  <section class="card">
+    <div class="card-header"><h2>Webhooks уведомлений</h2></div>
+    <div class="card-body">
+
+      <!-- Add webhook form -->
+      <form method="post" action="/settings/webhooks/add" class="form" style="margin-bottom:1.5rem; padding-bottom:1.5rem; border-bottom:1px solid var(--border);">
+        <h3 style="font-size:0.9rem; margin-bottom:0.75rem;">Добавить webhook</h3>
+        <div class="form-group">
+          <label>Название</label>
+          <input type="text" name="name" required placeholder="Rocket.Chat alerts" />
+        </div>
+        <div class="form-group">
+          <label>URL *</label>
+          <input type="url" name="url" required placeholder="https://chat.example.com/hooks/TOKEN" />
+        </div>
+        <div class="form-row">
+          <label class="checkbox-label">
+            <input type="checkbox" name="on_backup_fail" value="true" checked /> Ошибки бэкапа
+          </label>
+          <label class="checkbox-label">
+            <input type="checkbox" name="on_ping_fail" value="true" checked /> Устройство недоступно
+          </label>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary">Добавить</button>
+        </div>
+      </form>
+
+      {% if webhooks %}
+      <table class="data-table">
+        <thead><tr><th>Название</th><th>URL</th><th>Триггеры</th><th>Статус</th><th></th></tr></thead>
+        <tbody>
+          {% for wh in webhooks %}
+          <tr>
+            <td><strong>{{ wh.name }}</strong></td>
+            <td class="monospace small" style="max-width:200px; overflow:hidden; text-overflow:ellipsis;">
+              {{ wh.url[:60] }}{% if wh.url|length > 60 %}…{% endif %}
+            </td>
+            <td class="small">
+              {% if wh.on_backup_fail %}<span class="badge badge-gray">backup</span>{% endif %}
+              {% if wh.on_ping_fail %}<span class="badge badge-gray">ping</span>{% endif %}
+            </td>
+            <td>
+              {% if wh.enabled %}
+                <span class="badge badge-green">✓ Active</span>
+              {% else %}
+                <span class="badge badge-gray">✗ Disabled</span>
+              {% endif %}
+            </td>
+            <td class="actions">
+              <form method="post" action="/settings/webhooks/{{ wh.id }}/toggle" style="display:inline">
+                <button type="submit" class="btn btn-xs btn-secondary">{{ '⏸' if wh.enabled else '▶' }}</button>
+              </form>
+              <form method="post" action="/settings/webhooks/{{ wh.id }}/delete" style="display:inline"
+                    onsubmit="return confirm('Удалить?')">
+                <button type="submit" class="btn btn-xs btn-danger">✕</button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+        <div class="empty-state small">Webhooks не настроены.</div>
+      {% endif %}
+    </div>
+  </section>
+
+  <!-- Scheduler info -->
+  <section class="card">
+    <div class="card-header"><h2>Планировщик задач</h2></div>
+    <div class="card-body table-wrapper">
+      {% if scheduler_jobs %}
+      <table class="data-table">
+        <thead><tr><th>ID</th><th>Задача</th><th>Следующий запуск</th></tr></thead>
+        <tbody>
+          {% for job in scheduler_jobs %}
+          <tr>
+            <td class="monospace small">{{ job.id }}</td>
+            <td>{{ job.name }}</td>
+            <td class="monospace small">{{ job.next_run }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+        <div class="empty-state small">Планировщик не запущен или задач нет.</div>
+      {% endif %}
+    </div>
+  </section>
+
+</div>
+{% endblock %}

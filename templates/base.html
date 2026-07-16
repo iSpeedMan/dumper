@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}{{ page_title }} — Dumper{% endblock %}</title>
+  <link rel="stylesheet" href="/static/css/style.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📦</text></svg>" />
+</head>
+<body>
+  <!-- Sidebar -->
+  <nav class="sidebar">
+    <div class="sidebar-brand">
+      <span class="brand-icon">📦</span>
+      <span class="brand-name">Dumper</span>
+    </div>
+    <ul class="nav-links">
+      <li>
+        <a href="/" class="nav-link {% if request.url.path == '/' %}active{% endif %}">
+          <span class="nav-icon">🏠</span> Dashboard
+        </a>
+      </li>
+      <li>
+        <a href="/inventory/" class="nav-link {% if '/inventory' in request.url.path %}active{% endif %}">
+          <span class="nav-icon">🗂️</span> Inventory
+        </a>
+      </li>
+      <li>
+        <a href="/templates/" class="nav-link {% if '/templates' in request.url.path %}active{% endif %}">
+          <span class="nav-icon">📋</span> Templates
+        </a>
+      </li>
+      <li>
+        <a href="/settings/" class="nav-link {% if '/settings' in request.url.path %}active{% endif %}">
+          <span class="nav-icon">⚙️</span> Settings
+        </a>
+      </li>
+    </ul>
+    <div class="sidebar-footer">
+      <span class="version">v1.0.0</span>
+    </div>
+  </nav>
+
+  <!-- Main content -->
+  <main class="main-content">
+    <header class="page-header">
+      <h1 class="page-title">{{ page_title }}</h1>
+      <div class="header-actions">
+        {% block header_actions %}{% endblock %}
+      </div>
+    </header>
+
+    {% block content %}{% endblock %}
+  </main>
+
+  <script src="/static/js/main.js"></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

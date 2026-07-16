@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block header_actions %}
+  <a href="/templates/add" class="btn btn-primary">+ Добавить шаблон</a>
+{% endblock %}
+
+{% block content %}
+<section class="card">
+  <div class="card-header"><h2>Шаблоны команд ({{ templates|length }})</h2></div>
+  <div class="card-body table-wrapper">
+    {% if templates %}
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Название</th>
+          <th>Тип устройства</th>
+          <th>Описание</th>
+          <th>Команд</th>
+          <th>Действия</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for t in templates %}
+        <tr>
+          <td><strong>{{ t.name }}</strong></td>
+          <td class="monospace small">{{ t.device_type or '—' }}</td>
+          <td class="small">{{ t.description or '—' }}</td>
+          <td class="small">{{ t.get_commands()|length }}</td>
+          <td class="actions">
+            <a href="/templates/{{ t.id }}/edit" class="btn btn-xs btn-secondary">✏ Edit</a>
+            <form method="post" action="/templates/{{ t.id }}/delete" style="display:inline"
+                  onsubmit="return confirm('Удалить шаблон {{ t.name }}?')">
+              <button type="submit" class="btn btn-xs btn-danger">✕</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+      <div class="empty-state">
+        <p>Шаблоны не созданы.</p>
+        <a href="/templates/add" class="btn btn-primary">Создать первый шаблон</a>
+      </div>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

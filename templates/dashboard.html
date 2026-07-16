@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+
+{% block header_actions %}
+  <button class="btn btn-sm btn-secondary" onclick="refreshStats()">↻ Обновить</button>
+{% endblock %}
+
+{% block content %}
+
+<!-- Stats cards -->
+<div class="stats-grid" id="stats-grid">
+  <div class="stat-card stat-total">
+    <div class="stat-value" id="stat-total">{{ total_devices }}</div>
+    <div class="stat-label">Всего устройств</div>
+  </div>
+  <div class="stat-card stat-online">
+    <div class="stat-value" id="stat-online">{{ online_count }}</div>
+    <div class="stat-label">Online</div>
+  </div>
+  <div class="stat-card stat-offline">
+    <div class="stat-value" id="stat-offline">{{ offline_count }}</div>
+    <div class="stat-label">Offline</div>
+  </div>
+  <div class="stat-card stat-unknown">
+    <div class="stat-value" id="stat-unknown">{{ unknown_count }}</div>
+    <div class="stat-label">Неизвестно</div>
+  </div>
+  <div class="stat-card stat-success">
+    <div class="stat-value" id="stat-success24">{{ success_24h }}</div>
+    <div class="stat-label">Бэкапов за 24ч ✓</div>
+  </div>
+  <div class="stat-card stat-failed">
+    <div class="stat-value" id="stat-failed24">{{ failed_24h }}</div>
+    <div class="stat-label">Ошибок за 24ч ✗</div>
+  </div>
+</div>
+
+<div class="two-col">
+
+  <!-- Device availability table -->
+  <section class="card">
+    <div class="card-header">
+      <h2>Состояние устройств</h2>
+      <a href="/inventory/" class="btn btn-sm btn-primary">Все устройства →</a>
+    </div>
+    <div class="card-body table-wrapper">
+      {% if devices %}
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Устройство</th>
+            <th>Хост</th>
+            <th>Статус</th>
+            <th>Последний ping</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for device in devices %}
+          <tr>
+            <td>
+              <a href="/inventory/{{ device.id }}/jobs">{{ device.name }}</a>
+              {% if device.group %}<span class="badge badge-gray">{{ device.group.name }}</span>{% endif %}
+            </td>
+            <td class="monospace">{{ device.hostname }}</td>
+            <td>
+              {% if device.status.value == 'online' %}
+                <span class="badge badge-green">● Online</span>
+              {% elif device.status.value == 'offline' %}
+                <span class="badge badge-red">● Offline</span>
+              {% else %}
+                <span class="badge badge-gray">● Unknown</span>
+              {% endif %}
+            </td>
+            <td class="monospace small">
+              {% if device.ping_status %}
+                {{ device.ping_status.last_checked.strftime('%H:%M:%S') if device.ping_status.last_checked else '—' }}
+                {% if device.ping_status.rtt_ms %}
+                  <span class="rtt">{{ device.ping_status.rtt_ms }}ms</span>
+                {% endif %}
+              {% else %}—{% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+        <div class="empty-state">
+          <p>Устройства не добавлены.</p>
+          <a href="/inventory/add" class="btn btn-primary">Добавить устройство</a>
+        </div>
+      {% endif %}
+    </div>
+  </section>
+
+  <!-- Recent backup jobs -->
+  <section class="card">
+    <div class="card-header">
+      <h2>Последние бэкапы</h2>
+    </div>
+    <div class="card-body table-wrapper">
+      {% if recent_jobs %}
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Устройство</th>
+            <th>Статус</th>
+            <th>Длит.</th>
+            <th>Время</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for job in recent_jobs %}
+          <tr>
+            <td>
+              <a href="/inventory/{{ job.device_id }}/jobs">{{ job.device.name }}</a>
+            </td>
+            <td>
+              {% if job.status.value == 'success' %}
+                <span class="badge badge-green">✓ OK</span>
+              {% elif job.status.value == 'failed' %}
+                <span class="badge badge-red" title="{{ job.error_message }}">✗ FAIL</span>
+              {% elif job.status.value == 'running' %}
+                <span class="badge badge-blue">⟳ Running</span>
+              {% else %}
+                <span class="badge badge-gray">{{ job.status.value }}</span>
+              {% endif %}
+            </td>
+            <td class="small">{{ job.duration_seconds or '—' }}s</td>
+            <td class="small monospace">
+              {{ job.started_at.strftime('%m-%d %H:%M') if job.started_at else '—' }}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+        <div class="empty-state">Бэкапов ещё не было.</div>
+      {% endif %}
+    </div>
+  </section>
+
+</div>
+
+<script>
+async function refreshStats() {
+  try {
+    const r = await fetch('/api/stats');
+    const d = await r.json();
+    document.getElementById('stat-total').textContent = d.total;
+    document.getElementById('stat-online').textContent = d.online;
+    document.getElementById('stat-offline').textContent = d.offline;
+    document.getElementById('stat-unknown').textContent = d.unknown;
+    document.getElementById('stat-success24').textContent = d.success_24h;
+    document.getElementById('stat-failed24').textContent = d.failed_24h;
+  } catch(e) { console.error('Stats refresh failed', e); }
+}
+// Auto-refresh every 30s
+setInterval(refreshStats, 30000);
+</script>
+{% endblock %}
