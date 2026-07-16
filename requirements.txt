@@ -57,3 +57,4 @@ itsdangerous
 ldap3
 passlib[bcrypt]
 starlette
+bcrypt

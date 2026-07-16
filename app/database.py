@@ -6,7 +6,7 @@ All models import Base from here; all routes use get_db() as a dependency.
 from pathlib import Path
 from typing import Generator
 
-from sqlalchemy import create_engine, event
+from sqlalchemy import create_engine, event, text
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
 from app.config import settings
@@ -74,8 +74,21 @@ def get_db() -> Generator[Session, None, None]:
         db.close()
 
 
+def _migrate_schema(engine) -> None:
+    """Add columns that were added after initial DB creation."""
+    with engine.connect() as conn:
+        # notification_webhooks.send_diff (added in v1.1)
+        try:
+            conn.execute(text(
+                "ALTER TABLE notification_webhooks ADD COLUMN send_diff BOOLEAN NOT NULL DEFAULT 0"
+            ))
+            conn.commit()
+        except Exception:
+            pass  # Column already exists
+
+
 def init_db() -> None:
-    """Create all tables. Called once at app startup."""
-    # Import all models so their tables are registered on Base.metadata
+    """Create all tables and run lightweight schema migrations."""
     from app import models  # noqa: F401
     Base.metadata.create_all(bind=engine)
+    _migrate_schema(engine)
