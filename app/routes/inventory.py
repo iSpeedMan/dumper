@@ -72,7 +72,7 @@ async def inventory_list(
         "devices": devices,
         "groups": groups,
         "last_dates": last_dates,
-        "page_title": "inventory",
+        "page_title": "inv.title",
     })
 
 

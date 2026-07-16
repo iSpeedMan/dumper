@@ -20,29 +20,31 @@
   <!-- Sidebar -->
   <nav class="sidebar">
     <div class="sidebar-brand">
-      <span style="font-size:1.3rem">📦</span>
-      <span class="brand-name">dump<span class="brand-accent">er</span></span>
+      <a href="/" style="display:flex;align-items:center;gap:8px;text-decoration:none">
+        <span style="font-size:1.3rem">📦</span>
+        <span class="brand-name">dump<span class="brand-accent">er</span></span>
+      </a>
     </div>
 
     <ul class="nav-links">
       <li>
         <a href="/" class="nav-link {% if request.url.path == '/' %}active{% endif %}">
-          <span class="nav-icon">⬛</span> {{ t('nav.dashboard') }}
+          <span class="nav-icon">🏠</span> {{ t('nav.dashboard') }}
         </a>
       </li>
       <li>
         <a href="/inventory/" class="nav-link {% if '/inventory' in request.url.path %}active{% endif %}">
-          <span class="nav-icon">☰</span> {{ t('nav.inventory') }}
+          <span class="nav-icon">🖥</span> {{ t('nav.inventory') }}
         </a>
       </li>
       <li>
         <a href="/templates/" class="nav-link {% if '/templates' in request.url.path %}active{% endif %}">
-          <span class="nav-icon">≡</span> {{ t('nav.templates') }}
+          <span class="nav-icon">📋</span> {{ t('nav.templates') }}
         </a>
       </li>
       <li>
         <a href="/settings/" class="nav-link {% if '/settings' in request.url.path %}active{% endif %}">
-          <span class="nav-icon">⚙</span> {{ t('nav.settings') }}
+          <span class="nav-icon">⚙️</span> {{ t('nav.settings') }}
         </a>
       </li>
     </ul>

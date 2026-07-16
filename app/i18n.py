@@ -89,7 +89,7 @@ TRANSLATIONS: Dict[str, Dict[str, str]] = {
 
     # --- Templates ---
     "tpl.title":            {"ru": "шаблоны команд",        "en": "command templates"},
-    "tpl.add":              {"ru": "+ добавить шаблон",     "en": "+ add template"},
+    "tpl.add":              {"ru": "добавить шаблон",     "en": "add template"},
     "tpl.name":             {"ru": "название",              "en": "name"},
     "tpl.device_type":      {"ru": "тип устройства",        "en": "device type"},
     "tpl.description":      {"ru": "описание",              "en": "description"},
