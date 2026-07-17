@@ -11,6 +11,7 @@
     <div class="panel-header"><span class="panel-title">{{ t('grp.add') }}</span></div>
     <div class="panel-body">
       <form method="post" action="/inventory/groups/add" class="metro-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token(request) }}"/>
         <div class="form-group">
           <label class="form-label">{{ t('grp.name') }} *</label>
           <input class="metro-input" type="text" name="name" required placeholder="Moscow-DC"/>
@@ -48,6 +49,7 @@
             <td>
               <form method="post" action="/inventory/groups/{{ g.id }}/delete"
                     data-confirm="{{ t('grp.delete') }}: {{ g.name }}?">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token(request) }}"/>
                 <button type="submit" class="metro-btn danger xs">✕</button>
               </form>
             </td>

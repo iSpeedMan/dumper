@@ -11,6 +11,13 @@ function getCookie(name) {
   return m ? decodeURIComponent(m[1]) : null;
 }
 
+// ── CSRF token helper ─────────────────────────────────────────────────────────
+// Reads the token injected by base.html into <meta name="csrf-token">.
+// Pass the returned value as the X-CSRF-Token header in all fetch() POST/PUT/DELETE calls.
+function getCsrfToken() {
+  return document.querySelector('meta[name="csrf-token"]')?.getAttribute("content") || "";
+}
+
 // ── Theme toggle ─────────────────────────────────────────────────────────────
 window.toggleTheme = function () {
   const isLight = document.body.classList.toggle("theme-light");
@@ -72,7 +79,10 @@ window.testLdap = async function () {
   btn.disabled = true;
   btn.textContent = "testing…";
   try {
-    const r = await fetch("/settings/ldap/test", { method: "POST" });
+    const r = await fetch("/settings/ldap/test", {
+      method: "POST",
+      headers: { "X-CSRF-Token": getCsrfToken() },
+    });
     const d = await r.json();
     res.style.display = "block";
     res.className = "ldap-result " + (d.ok ? "ok" : "err");

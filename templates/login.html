@@ -22,6 +22,7 @@
 
     <form method="post" action="/login" class="metro-form">
       <input type="hidden" name="next" value="{{ request.query_params.get('next', '/') }}"/>
+      <input type="hidden" name="csrf_token" value="{{ csrf_token(request) }}"/>
       <div class="form-group">
         <label class="form-label">{{ t('auth.username') }}</label>
         <input class="metro-input" type="text" name="username" autofocus autocomplete="username" required/>

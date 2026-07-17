@@ -13,6 +13,7 @@
     <form method="post"
           action="/templates/{{ template.id ~ '/edit' if template else 'add' }}"
           class="metro-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token(request) }}"/>
 
       <div class="form-row">
         <div class="form-group">

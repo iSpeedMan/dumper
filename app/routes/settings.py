@@ -7,7 +7,6 @@ from typing import Optional
 
 from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
-from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
 from app.auth import require_auth
@@ -15,9 +14,9 @@ from app.database import get_db
 from app.i18n import make_translator
 from app.models import AppSetting, NotificationWebhook
 from app.scheduler import get_scheduler
+from app.templating import templates
 
 router = APIRouter(prefix="/settings")
-templates = Jinja2Templates(directory="templates")
 logger = logging.getLogger(__name__)
 
 LDAP_KEYS = [

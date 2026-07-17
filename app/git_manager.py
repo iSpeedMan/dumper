@@ -5,12 +5,19 @@ Each device has its own directory inside the repo:
   configs_repo/
     <group_or_ungrouped>/
       <device_name>/
-        config.txt       <- latest config snapshot
+        config.enc       <- AES-256-GCM encrypted config snapshot
 
 On every successful backup:
-1. The config file is written/overwritten.
+1. The config is AES-256-GCM encrypted with the app master key and written
+   to disk as a binary blob.  Plain-text configs are NEVER written to disk.
 2. A Git commit is created with metadata in the message.
-3. The diff between the previous and new commit is returned.
+3. The diff between the previous and new commit is computed in memory
+   (both blobs decrypted before diffing) and returned.
+
+Security note:
+  Even with full filesystem access an attacker cannot read backup configs
+  without the master key stored in config.yaml.  All app reads go through
+  _read_config_file() which decrypts transparently.
 """
 
 import logging
@@ -90,6 +97,37 @@ class GitManager:
         return device_dir
 
     # ------------------------------------------------------------------
+    # Encryption helpers
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _encrypt_config(plaintext: str) -> bytes:
+        """
+        Encrypt config plaintext to a binary blob using AES-256-GCM.
+        The blob is stored as-is (binary) in the Git-tracked file so that
+        it is unreadable without the master key.
+        Format: b"DUMPER_ENC_V1\n" + base64(nonce + ciphertext + tag)
+        """
+        from app.crypto import encrypt as _encrypt
+        b64 = _encrypt(plaintext)   # returns base64 string
+        return b"DUMPER_ENC_V1\n" + b64.encode("ascii")
+
+    @staticmethod
+    def _decrypt_config(raw: bytes) -> str:
+        """
+        Decrypt a binary blob written by _encrypt_config().
+        Falls back to treating the data as plain UTF-8 text so that
+        any pre-existing unencrypted config.txt files are still readable
+        (migration path).
+        """
+        from app.crypto import decrypt as _decrypt
+        if raw.startswith(b"DUMPER_ENC_V1\n"):
+            b64 = raw[len(b"DUMPER_ENC_V1\n"):].decode("ascii").strip()
+            return _decrypt(b64)
+        # Legacy plain-text fallback
+        return raw.decode("utf-8", errors="replace")
+
+    # ------------------------------------------------------------------
     # Public API
     # ------------------------------------------------------------------
 
@@ -101,22 +139,36 @@ class GitManager:
         device_hostname: str,
     ) -> Tuple[Optional[str], str]:
         """
-        Write config_content to the repo and commit it.
+        Encrypt config_content, write it to the repo, and commit.
 
         Returns:
             (commit_hash, diff_text)
             commit_hash: SHA of the new commit, or None if commit failed.
-            diff_text:   Unified diff against the previous commit, or empty string.
+            diff_text:   Unified diff against the previous commit (plain text),
+                         computed in-memory after decryption.
         """
         device_dir = self._get_device_dir(device_name, group_name)
-        config_file = device_dir / "config.txt"
+        config_file = device_dir / "config.enc"
         rel_path = config_file.relative_to(self.repo_path)
 
-        # --- Capture diff BEFORE overwriting the file ---
-        old_content = config_file.read_text(encoding="utf-8") if config_file.exists() else None
+        # --- Capture and decrypt the OLD content for diff & equality check ---
+        old_content: Optional[str] = None
+        if config_file.exists():
+            try:
+                old_content = self._decrypt_config(config_file.read_bytes())
+            except Exception as exc:
+                logger.warning("Could not decrypt old config for diff: %s", exc)
 
-        # Write new content
-        config_file.write_text(config_content, encoding="utf-8")
+        # --- Plaintext equality check BEFORE writing ---
+        # We must compare plaintext (not ciphertext) because every AES-GCM
+        # encryption uses a fresh random nonce, so the ciphertext blob always
+        # differs even when the config hasn't changed.
+        if old_content is not None and old_content == config_content:
+            logger.info("No changes to commit for device '%s' (plaintext identical)", device_name)
+            return None, ""
+
+        # --- Encrypt and write the new content ---
+        config_file.write_bytes(self._encrypt_config(config_content))
 
         # Stage the file
         try:
@@ -125,9 +177,9 @@ class GitManager:
             logger.error("Git add failed for %s: %s", rel_path, exc)
             return None, ""
 
-        # Check if anything actually changed
+        # Secondary guard: if nothing staged (e.g. very first commit edge case)
         if not self._repo.index.diff("HEAD"):
-            logger.info("No changes to commit for device '%s'", device_name)
+            logger.info("No changes staged for device '%s'", device_name)
             return None, ""
 
         # Build commit message
@@ -143,7 +195,7 @@ class GitManager:
         if not commit:
             return None, ""
 
-        # Build diff
+        # Build diff in plain-text space (after decryption)
         diff_text = self._compute_diff(old_content, config_content, str(rel_path))
         logger.info(
             "Committed config for '%s' — %s (%d lines changed)",
@@ -160,18 +212,21 @@ class GitManager:
     ) -> str:
         """
         Return the unified diff for a specific device file between two commit SHAs.
+        Both blobs are decrypted in memory before diffing.
         Returns an empty string if commits or file don't exist.
         """
         if not self._repo:
             return ""
         try:
             device_dir = self._get_device_dir(device_name, group_name)
-            config_file = device_dir / "config.txt"
+            config_file = device_dir / "config.enc"
             rel_path = str(config_file.relative_to(self.repo_path))
 
-            blob_a = self._repo.commit(commit_a).tree[rel_path].data_stream.read().decode("utf-8", errors="replace")
-            blob_b = self._repo.commit(commit_b).tree[rel_path].data_stream.read().decode("utf-8", errors="replace")
-            return self._compute_diff(blob_a, blob_b, rel_path)
+            raw_a = self._repo.commit(commit_a).tree[rel_path].data_stream.read()
+            raw_b = self._repo.commit(commit_b).tree[rel_path].data_stream.read()
+            text_a = self._decrypt_config(raw_a)
+            text_b = self._decrypt_config(raw_b)
+            return self._compute_diff(text_a, text_b, rel_path)
         except (KeyError, git.BadName, Exception) as exc:
             logger.warning("diff_between_commits failed: %s", exc)
             return ""
@@ -190,7 +245,7 @@ class GitManager:
             return []
         try:
             device_dir = self._get_device_dir(device_name, group_name)
-            config_file = device_dir / "config.txt"
+            config_file = device_dir / "config.enc"
             rel_path = str(config_file.relative_to(self.repo_path))
 
             commits = list(self._repo.iter_commits(paths=rel_path, max_count=max_count))
@@ -214,15 +269,15 @@ class GitManager:
         group_name: Optional[str],
         sha: str,
     ) -> Optional[str]:
-        """Return the config text as it existed at a specific commit SHA."""
+        """Return the decrypted config text as it existed at a specific commit SHA."""
         if not self._repo:
             return None
         try:
             device_dir = self._get_device_dir(device_name, group_name)
-            config_file = device_dir / "config.txt"
+            config_file = device_dir / "config.enc"
             rel_path = str(config_file.relative_to(self.repo_path))
-            blob = self._repo.commit(sha).tree[rel_path]
-            return blob.data_stream.read().decode("utf-8", errors="replace")
+            raw = self._repo.commit(sha).tree[rel_path].data_stream.read()
+            return self._decrypt_config(raw)
         except Exception as exc:
             logger.warning("get_config_at_commit sha=%s failed: %s", sha, exc)
             return None
@@ -232,12 +287,20 @@ class GitManager:
         device_name: str,
         group_name: Optional[str],
     ) -> Optional[str]:
-        """Return the current content of the config file, or None if not found."""
+        """Return the decrypted content of the current config file, or None if not found."""
         device_dir = self._get_device_dir(device_name, group_name)
-        config_file = device_dir / "config.txt"
-        if config_file.exists():
-            return config_file.read_text(encoding="utf-8")
-        return None
+        config_file = device_dir / "config.enc"
+        # Also check legacy plain-text filename for migration
+        if not config_file.exists():
+            legacy = device_dir / "config.txt"
+            if legacy.exists():
+                return legacy.read_text(encoding="utf-8")
+            return None
+        try:
+            return self._decrypt_config(config_file.read_bytes())
+        except Exception as exc:
+            logger.warning("get_latest_config decryption failed: %s", exc)
+            return None
 
     # ------------------------------------------------------------------
     # Static helpers

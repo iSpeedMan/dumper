@@ -43,6 +43,7 @@
     </div>
     <div class="panel-body">
       <form method="post" action="/users/add" class="metro-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token(request) }}"/>
         <div class="form-group">
           <label class="form-label">{{ t('usr.username') }}</label>
           <input class="metro-input" type="text" name="username" required
@@ -129,6 +130,7 @@
                 {# Role toggle #}
                 {% if u.id != current_user_id %}
                 <form method="post" action="/users/{{ u.id }}/role" style="display:inline">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token(request) }}"/>
                   <button type="submit" class="metro-btn xs {% if u.is_admin %}secondary{% else %}accent{% endif %}"
                           title="{{ t('usr.change_role') }}">
                     {% if u.is_admin %}↓ ro{% else %}↑ adm{% endif %}
@@ -146,6 +148,7 @@
                 {# Enable/Disable #}
                 {% if u.id != current_user_id %}
                 <form method="post" action="/users/{{ u.id }}/toggle" style="display:inline">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token(request) }}"/>
                   <button type="submit" class="metro-btn xs {% if u.is_active %}secondary{% else %}success{% endif %}"
                           title="{{ t('usr.toggle_active') }}">
                     {% if u.is_active %}⏸{% else %}▶{% endif %}
@@ -157,6 +160,7 @@
                 {% if u.id != current_user_id %}
                 <form method="post" action="/users/{{ u.id }}/delete" style="display:inline"
                       data-confirm="{{ t('usr.confirm_delete') }}: {{ u.username }}?">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token(request) }}"/>
                   <button type="submit" class="metro-btn danger xs" title="{{ t('usr.delete') }}">✕</button>
                 </form>
                 {% endif %}
@@ -167,6 +171,7 @@
               {% if not u.is_ldap %}
               <form id="pw-form-{{ u.id }}" method="post" action="/users/{{ u.id }}/password"
                     class="pw-inline-form hidden" style="margin-top:6px;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token(request) }}"/>
                 <div style="display:flex; gap:4px; align-items:center;">
                   <input class="metro-input" type="password" name="new_password"
                          placeholder="{{ t('usr.new_password') }}" required

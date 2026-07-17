@@ -7,7 +7,6 @@ from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
-from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
 from app.auth import (
@@ -17,9 +16,10 @@ from app.auth import (
 from app.database import get_db
 from app.models import User
 from app.i18n import make_translator
+from app.security import brute_force, rate_limiter
+from app.templating import templates
 
 router = APIRouter()
-templates = Jinja2Templates(directory="templates")
 logger = logging.getLogger(__name__)
 
 
@@ -116,6 +116,26 @@ async def login_post(
     lang = _get_lang(request)
     username = username.strip()
 
+    # ── General rate limit: max 30 login POSTs per minute per IP ──────────
+    rate_limiter.check(request, bucket="login", max_requests=30, window_seconds=60)
+
+    # ── Brute-force / fail2ban check ───────────────────────────────────────
+    locked, remaining = brute_force.is_locked(request)
+    if locked:
+        minutes = (remaining + 59) // 60
+        error_msg = (
+            f"Аккаунт временно заблокирован. Попробуйте через {minutes} мин."
+            if lang == "ru"
+            else f"Too many failed attempts. Try again in {minutes} min."
+        )
+        return templates.TemplateResponse("login.html", {
+            "request": request,
+            "t": make_translator(lang),
+            "lang": lang,
+            "error": error_msg,
+            "page_title": "login",
+        })
+
     # 1. Try local DB auth
     user_id = authenticate_local(username, password, db)
 
@@ -123,7 +143,8 @@ async def login_post(
         user = db.get(User, user_id)
         user.last_login = datetime.now(timezone.utc)
         db.commit()
-        set_session_user(request, user_id, username, is_admin=user.is_admin)
+        brute_force.record_success(request)
+        set_session_user(request, user_id, username, is_admin=bool(user.is_admin))
         logger.info("Local login: '%s'", username)
         return RedirectResponse(url=next or "/", status_code=302)
 
@@ -145,17 +166,30 @@ async def login_post(
             db.refresh(existing)
         existing.last_login = datetime.now(timezone.utc)
         db.commit()
-        set_session_user(request, existing.id, username, is_admin=existing.is_admin)
+        brute_force.record_success(request)
+        set_session_user(request, existing.id, username, is_admin=bool(existing.is_admin))
         logger.info("LDAP login: '%s'", username)
         return RedirectResponse(url=next or "/", status_code=302)
 
-    # 3. Failed
-    logger.warning("Failed login attempt for '%s'", username)
+    # 3. Failed — record the failure and tell the user how many attempts remain
+    brute_force.record_failure(request)
+    left = brute_force.remaining_attempts(request)
+    logger.warning("Failed login attempt for '%s' (IP left: %d)", username, left)
+
+    if left == 0:
+        error_msg = (
+            "Аккаунт заблокирован на 5 минут из-за множества неверных попыток."
+            if lang == "ru"
+            else "Account locked for 5 minutes due to too many failed attempts."
+        )
+    else:
+        error_msg = "auth.wrong_creds"
+
     return templates.TemplateResponse("login.html", {
         "request": request,
         "t": make_translator(lang),
         "lang": lang,
-        "error": "auth.wrong_creds",
+        "error": error_msg,
         "page_title": "login",
     })
 

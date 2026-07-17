@@ -6,3 +6,8 @@
 - [Session user dict](session-user.md) — get_session_user returns {id, username, is_admin}; is_admin stored in session at login; set_session_user takes is_admin param.
 - [User management](user-management.md) — /users/ admin-only panel; app/routes/users.py; templates/users.html; flash via ?flash= query param.
 - [Diff viewer view mode](diff-view-mode.md) — /diff/{id}/view/{sha} shows full config at commit; git_manager.get_config_at_commit(); commit-active class = purple highlight.
+- [Shared Jinja2 templates](jinja2-shared-templates.md) — all routes import `templates` from app/templating.py (single instance); Jinja2 globals (csrf_token) registered there.
+- [Middleware ordering](middleware-ordering.md) — SessionMiddleware must be OUTERMOST; add CSRFMiddleware first, then SessionMiddleware in main.py (last add_middleware = outermost).
+- [Backup file encryption](backup-encryption.md) — configs_repo stores AES-256-GCM encrypted blobs (config.enc); legacy config.txt read-through for migration; diff computed in-memory after decrypt.
+- [CSRF middleware body reading](csrf-body-read.md) — Starlette 0.37.2 _CachedRequest.wrapped_receive returns self._body if body() was called; safe to read form() in BaseHTTPMiddleware before call_next.
+- [require_auth DB refresh](require-auth-refresh.md) — require_auth always re-fetches is_admin and is_active from DB; fixes stale session flags and ensures setup admin sees Users button.

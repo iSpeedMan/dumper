@@ -9,7 +9,6 @@ Routes:
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import HTMLResponse
-from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
 from app.auth import require_auth
@@ -17,9 +16,9 @@ from app.database import get_db
 from app.git_manager import get_git_manager
 from app.i18n import make_translator
 from app.models import Device
+from app.templating import templates
 
 router = APIRouter(prefix="/diff")
-templates = Jinja2Templates(directory="templates")
 
 
 def _lang(request: Request) -> str:

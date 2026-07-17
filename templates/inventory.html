@@ -76,6 +76,7 @@
               <span class="action-icon">⎇</span><span class="action-label">diff</span>
             </a>
             <form method="post" action="/inventory/{{ device.id }}/backup" style="display:inline">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token(request) }}"/>
               <button type="submit"
                       class="metro-btn success xs action-btn"
                       title="{{ t('inv.run') }}">
@@ -84,6 +85,7 @@
             </form>
             <form method="post" action="/inventory/{{ device.id }}/delete" style="display:inline"
                   data-confirm="{{ t('inv.confirm_delete') }}: {{ device.name }}?">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token(request) }}"/>
               <button type="submit"
                       class="metro-btn danger xs action-btn"
                       title="{{ t('inv.delete') }}">

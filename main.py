@@ -20,6 +20,7 @@ from app.auth import _AuthRedirect, auth_redirect_handler
 from app.config import settings
 from app.database import init_db
 from app.scheduler import start_scheduler, stop_scheduler
+from app.security import CSRFMiddleware
 
 # ---------------------------------------------------------------------------
 # Logging
@@ -108,13 +109,26 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# Session middleware (must be added before routes)
+# Middleware ordering note:
+# Starlette applies add_middleware() in REVERSE order — the LAST call becomes
+# the OUTERMOST layer (processes requests first).  We need SessionMiddleware to
+# run before CSRFMiddleware so the session is populated when CSRF validates it.
+#
+# Correct execution order on each request:
+#   SessionMiddleware → CSRFMiddleware → route handler
+#
+# To achieve that, add CSRFMiddleware first (inner), then SessionMiddleware (outer).
+
+# Inner: CSRF — checks session token populated by SessionMiddleware above
+app.add_middleware(CSRFMiddleware)
+
+# Outer: Session — reads signed cookie and populates request.session
 app.add_middleware(
     SessionMiddleware,
     secret_key=settings.app.secret_key,
     session_cookie="dumper_session",
     max_age=60 * 60 * 8,   # 8 hours
-    https_only=False,       # Set True behind HTTPS proxy in production
+    https_only=False,       # Set True in production behind HTTPS proxy
     same_site="lax",
 )
 
@@ -123,6 +137,7 @@ app.add_exception_handler(_AuthRedirect, auth_redirect_handler)
 
 # Static files
 app.mount("/static", StaticFiles(directory="static"), name="static")
+
 
 # Routes
 from app.routes.auth_routes import router as auth_router

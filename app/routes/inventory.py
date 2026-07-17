@@ -7,7 +7,6 @@ from typing import Optional
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
-from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
 from app.auth import require_auth
@@ -16,9 +15,9 @@ from app.database import get_db
 from app.i18n import make_translator
 from app.models import BackupJob, BackupJobStatus, BackupTemplate, Device, DeviceGroup
 from app.scheduler import refresh_custom_device_jobs
+from app.templating import templates
 
 router = APIRouter(prefix="/inventory")
-templates = Jinja2Templates(directory="templates")
 
 NETMIKO_TYPES = [
     "cisco_ios", "cisco_xr", "cisco_nxos", "cisco_asa", "cisco_wlc",

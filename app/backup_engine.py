@@ -175,7 +175,7 @@ def _run_backup_for_device(device_id: int) -> Tuple[bool, str]:
         from app.git_manager import _safe_filename
         safe_group = _safe_filename(group_name or "ungrouped")
         safe_dev = _safe_filename(device.name)
-        config_file_path = f"{safe_group}/{safe_dev}/config.txt"
+        config_file_path = f"{safe_group}/{safe_dev}/config.enc"
 
         duration = int(time.monotonic() - start_time)
 

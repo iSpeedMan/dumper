@@ -66,11 +66,19 @@ def get_session_user(request: Request) -> Optional[dict]:
 # FastAPI dependencies
 # ---------------------------------------------------------------------------
 
-def require_auth(request: Request):
+def require_auth(request: Request, db: Session = Depends(get_db)):
     """
     Dependency: ensures the user is authenticated.
+
+    Always refreshes is_admin and is_active from the DB so that:
+      - Demoted admins lose the nav button immediately (no stale session).
+      - Disabled accounts are kicked out without waiting for cookie expiry.
+      - The setup-created admin always sees the correct is_admin flag.
+
     Redirects to /login for GET requests, raises 401 for API requests.
     """
+    from app.models import User as _User
+
     user = get_session_user(request)
     if user is None:
         # Check if this is an API call (accept: application/json)
@@ -80,6 +88,17 @@ def require_auth(request: Request):
         # Redirect to login preserving the target URL
         next_url = str(request.url)
         raise _AuthRedirect(f"/login?next={next_url}")
+
+    # Refresh is_admin and is_active from the DB on every request.
+    db_user = db.get(_User, user["id"])
+    if not db_user or not db_user.is_active:
+        clear_session(request)
+        raise _AuthRedirect("/login")
+
+    # Keep session in sync so the template always reflects current DB state
+    user["is_admin"] = bool(db_user.is_admin)
+    request.session["is_admin"] = bool(db_user.is_admin)
+
     return user
 
 

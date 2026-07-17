@@ -14,16 +14,15 @@ import logging
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
-from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
 from app.auth import hash_password, require_auth
 from app.database import get_db
 from app.i18n import make_translator
 from app.models import User
+from app.templating import templates
 
 router = APIRouter(prefix="/users")
-templates = Jinja2Templates(directory="templates")
 logger = logging.getLogger(__name__)
 
 

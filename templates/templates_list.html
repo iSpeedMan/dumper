@@ -32,6 +32,7 @@
             <a href="/templates/{{ tmpl.id }}/edit" class="metro-btn secondary xs">✏ {{ t('tpl.edit') }}</a>
             <form method="post" action="/templates/{{ tmpl.id }}/delete" style="display:inline"
                   data-confirm="{{ t('tpl.delete') }}: {{ tmpl.name }}?">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token(request) }}"/>
               <button type="submit" class="metro-btn danger xs">✕</button>
             </form>
           </td>

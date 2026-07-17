@@ -13,6 +13,7 @@
       <!-- Add webhook form -->
       <form method="post" action="/settings/webhooks/add" class="metro-form"
             style="padding-bottom:var(--spacing-m); border-bottom:1px solid var(--border); margin-bottom:var(--spacing-m)">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token(request) }}"/>
         <div class="form-group">
           <label class="form-label">{{ t('set.webhook_name') }} *</label>
           <input class="metro-input" type="text" name="name" required placeholder="Rocket.Chat alerts"/>
@@ -76,10 +77,12 @@
             </td>
             <td class="actions">
               <form method="post" action="/settings/webhooks/{{ wh.id }}/toggle" style="display:inline">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token(request) }}"/>
                 <button type="submit" class="metro-btn secondary xs">{{ '⏸' if wh.enabled else '▶' }}</button>
               </form>
               <form method="post" action="/settings/webhooks/{{ wh.id }}/delete" style="display:inline"
                     data-confirm="{{ t('set.delete') }}?">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token(request) }}"/>
                 <button type="submit" class="metro-btn danger xs">✕</button>
               </form>
             </td>
@@ -131,6 +134,7 @@
   </div>
   <div class="panel-body">
     <form method="post" action="/settings/ldap/save" class="metro-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token(request) }}"/>
 
       <div class="form-group">
         <label class="metro-checkbox">

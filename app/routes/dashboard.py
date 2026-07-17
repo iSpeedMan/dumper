@@ -6,7 +6,6 @@ from datetime import datetime, timezone, timedelta
 
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse
-from fastapi.templating import Jinja2Templates
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
@@ -14,9 +13,9 @@ from app.auth import require_auth
 from app.database import get_db
 from app.i18n import make_translator
 from app.models import BackupJob, BackupJobStatus, Device, DeviceStatus
+from app.templating import templates
 
 router = APIRouter()
-templates = Jinja2Templates(directory="templates")
 
 
 def _lang(request: Request) -> str:

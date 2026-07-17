@@ -4,6 +4,7 @@
   <a href="/inventory/" class="metro-btn secondary">{{ t('job.back_inventory') }}</a>
   <a href="/diff/{{ device.id }}" class="metro-btn secondary">⊕ {{ t('job.diff_viewer') }}</a>
   <form method="post" action="/inventory/{{ device.id }}/backup" style="display:inline">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token(request) }}"/>
     <button type="submit" class="metro-btn primary">▶ {{ t('job.run_now') }}</button>
   </form>
 {% endblock %}
