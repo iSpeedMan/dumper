@@ -3,3 +3,6 @@
 - [Ping NoneType bug](ping-bug.md) — consecutive_failures must use `or 0` guard; SQLAlchemy default not applied until flush.
 - [i18n approach](i18n.md) — server-side dict in app/i18n.py; make_translator(lang) returns t(key) closure passed to every template; lang stored in cookie.
 - [Metro UI CSS](metro-css.md) — --metro-bg/surface/text vars; body.theme-light overrides; square corners (border-radius:0); lowercase text-transform on headings/buttons.
+- [Session user dict](session-user.md) — get_session_user returns {id, username, is_admin}; is_admin stored in session at login; set_session_user takes is_admin param.
+- [User management](user-management.md) — /users/ admin-only panel; app/routes/users.py; templates/users.html; flash via ?flash= query param.
+- [Diff viewer view mode](diff-view-mode.md) — /diff/{id}/view/{sha} shows full config at commit; git_manager.get_config_at_commit(); commit-active class = purple highlight.

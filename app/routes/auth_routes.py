@@ -76,7 +76,7 @@ async def setup_post(
     db.commit()
     db.refresh(user)
 
-    set_session_user(request, user.id, user.username)
+    set_session_user(request, user.id, user.username, is_admin=True)
     logger.info("First admin user '%s' created", username)
     return RedirectResponse(url="/", status_code=302)
 
@@ -123,7 +123,7 @@ async def login_post(
         user = db.get(User, user_id)
         user.last_login = datetime.now(timezone.utc)
         db.commit()
-        set_session_user(request, user_id, username)
+        set_session_user(request, user_id, username, is_admin=user.is_admin)
         logger.info("Local login: '%s'", username)
         return RedirectResponse(url=next or "/", status_code=302)
 
@@ -145,7 +145,7 @@ async def login_post(
             db.refresh(existing)
         existing.last_login = datetime.now(timezone.utc)
         db.commit()
-        set_session_user(request, existing.id, username)
+        set_session_user(request, existing.id, username, is_admin=existing.is_admin)
         logger.info("LDAP login: '%s'", username)
         return RedirectResponse(url=next or "/", status_code=302)
 

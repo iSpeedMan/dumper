@@ -208,6 +208,25 @@ class GitManager:
             logger.warning("get_commit_history failed: %s", exc)
             return []
 
+    def get_config_at_commit(
+        self,
+        device_name: str,
+        group_name: Optional[str],
+        sha: str,
+    ) -> Optional[str]:
+        """Return the config text as it existed at a specific commit SHA."""
+        if not self._repo:
+            return None
+        try:
+            device_dir = self._get_device_dir(device_name, group_name)
+            config_file = device_dir / "config.txt"
+            rel_path = str(config_file.relative_to(self.repo_path))
+            blob = self._repo.commit(sha).tree[rel_path]
+            return blob.data_stream.read().decode("utf-8", errors="replace")
+        except Exception as exc:
+            logger.warning("get_config_at_commit sha=%s failed: %s", sha, exc)
+            return None
+
     def get_latest_config(
         self,
         device_name: str,

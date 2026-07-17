@@ -7,47 +7,56 @@
 {% block content %}
 <div class="diff-layout">
 
-  <!-- Left panel: history + compare form -->
+  <!-- Left panel: commit history + compare form -->
   <aside class="diff-sidebar">
     <div class="panel">
       <div class="panel-header"><span class="panel-title">{{ t('diff.commit_history') }}</span></div>
-      <div class="panel-body">
+      <div class="panel-body" style="padding: var(--spacing-s);">
         {% if history %}
-          <form method="get" action="/diff/{{ device.id }}/compare" class="metro-form">
-            <div class="form-group">
-              <label class="form-label">{{ t('diff.commit_a') }}</label>
-              <select class="metro-select" name="commit_a" style="font-family:monospace;font-size:0.78rem">
-                {% for c in history %}
-                <option value="{{ c.sha }}" {% if c.sha == commit_a %}selected{% endif %}>
-                  {{ c.sha_short }} · {{ c.date[5:16] }}
-                </option>
-                {% endfor %}
-              </select>
-            </div>
-            <div class="form-group">
-              <label class="form-label">{{ t('diff.commit_b') }}</label>
-              <select class="metro-select" name="commit_b" style="font-family:monospace;font-size:0.78rem">
-                {% for c in history %}
-                <option value="{{ c.sha }}" {% if c.sha == commit_b %}selected{% endif %}>
-                  {{ c.sha_short }} · {{ c.date[5:16] }}
-                </option>
-                {% endfor %}
-              </select>
-            </div>
-            <button type="submit" class="metro-btn primary w-full">{{ t('diff.compare') }}</button>
-          </form>
 
-          <div class="mt-m">
-            <ul class="commit-list">
-              {% for c in history %}
-              <li class="commit-item">
+          <!-- Compare form -->
+          <details class="diff-compare-details">
+            <summary class="diff-compare-summary">{{ t('diff.compare') }} ↕</summary>
+            <form method="get" action="/diff/{{ device.id }}/compare" class="metro-form" style="padding-top: var(--spacing-s);">
+              <div class="form-group">
+                <label class="form-label">{{ t('diff.commit_a') }}</label>
+                <select class="metro-select" name="commit_a" style="font-family:monospace;font-size:0.78rem">
+                  {% for c in history %}
+                  <option value="{{ c.sha }}" {% if c.sha == commit_a %}selected{% endif %}>
+                    {{ c.sha_short }} · {{ c.date[5:16] }}
+                  </option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">{{ t('diff.commit_b') }}</label>
+                <select class="metro-select" name="commit_b" style="font-family:monospace;font-size:0.78rem">
+                  {% for c in history %}
+                  <option value="{{ c.sha }}" {% if c.sha == commit_b %}selected{% endif %}>
+                    {{ c.sha_short }} · {{ c.date[5:16] }}
+                  </option>
+                  {% endfor %}
+                </select>
+              </div>
+              <button type="submit" class="metro-btn primary w-full">{{ t('diff.compare') }}</button>
+            </form>
+          </details>
+
+          <!-- Commit list — click to view -->
+          <ul class="commit-list" style="margin-top: var(--spacing-s);">
+            {% for c in history %}
+            <li>
+              <a href="/diff/{{ device.id }}/view/{{ c.sha }}"
+                 class="commit-item {% if c.sha == active_sha %}commit-active{% endif %}"
+                 title="{{ c.message }}">
                 <span class="commit-sha">{{ c.sha_short }}</span>
                 <span class="commit-date">{{ c.date[5:16] }}</span>
-                <span class="commit-msg">{{ c.message }}</span>
-              </li>
-              {% endfor %}
-            </ul>
-          </div>
+                <span class="commit-msg">{{ c.message[:60] }}{% if c.message|length > 60 %}…{% endif %}</span>
+              </a>
+            </li>
+            {% endfor %}
+          </ul>
+
         {% else %}
           <div class="empty-state sm">{{ t('diff.no_commits') }}</div>
         {% endif %}
@@ -55,19 +64,44 @@
     </div>
   </aside>
 
-  <!-- Main panel: diff or current config -->
+  <!-- Main panel -->
   <main>
     {% if diff_text %}
+      <!-- Diff between two commits -->
       <div class="panel">
         <div class="panel-header">
           <span class="panel-title">{{ commit_a[:8] }} {{ t('diff.vs') }} {{ commit_b[:8] }}</span>
+          <span class="diff-stat">
+            <span class="text-green">+{{ diff_text.splitlines()|selectattr(0)|select("match","^\\+")|list|length }}</span>
+            <span class="text-red" style="margin-left:6px">-{{ diff_text.splitlines()|select("match","^-[^-]")|list|length }}</span>
+          </span>
         </div>
         <div class="panel-body" style="padding:0">
           <div class="code-block">{% for line in diff_text.splitlines() %}<span class="diff-line {% if line.startswith('+') and not line.startswith('+++') %}diff-add{% elif line.startswith('-') and not line.startswith('---') %}diff-del{% elif line.startswith('@@') %}diff-hunk{% endif %}">{{ line }}</span>
 {% endfor %}</div>
         </div>
       </div>
+
+    {% elif active_sha and view_config is not none %}
+      <!-- View single commit content -->
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-title">{{ t('diff.view_commit') }}: <code style="font-size:0.85rem">{{ active_sha[:12] }}</code></span>
+          {% if active_commit %}
+          <span class="text-dim" style="font-size:0.78rem">{{ active_commit.date[5:16] }} — {{ active_commit.message[:60] }}</span>
+          {% endif %}
+        </div>
+        <div class="panel-body" style="padding:0">
+          {% if view_config %}
+            <div class="code-block">{{ view_config }}</div>
+          {% else %}
+            <div class="empty-state">{{ t('diff.no_config') }}</div>
+          {% endif %}
+        </div>
+      </div>
+
     {% else %}
+      <!-- Default: current config -->
       <div class="panel">
         <div class="panel-header"><span class="panel-title">{{ t('diff.current_config') }}</span></div>
         <div class="panel-body" style="padding:0">

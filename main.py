@@ -131,6 +131,7 @@ from app.routes.inventory import router as inventory_router
 from app.routes.templates_routes import router as templates_router
 from app.routes.diff_viewer import router as diff_router
 from app.routes.settings import router as settings_router
+from app.routes.users import router as users_router
 
 app.include_router(auth_router)
 app.include_router(dashboard_router)
@@ -138,6 +139,7 @@ app.include_router(inventory_router)
 app.include_router(templates_router)
 app.include_router(diff_router)
 app.include_router(settings_router)
+app.include_router(users_router)
 
 
 # ---------------------------------------------------------------------------

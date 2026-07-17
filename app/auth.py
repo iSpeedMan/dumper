@@ -40,9 +40,10 @@ def verify_password(plain: str, hashed: str) -> bool:
 # Session helpers
 # ---------------------------------------------------------------------------
 
-def set_session_user(request: Request, user_id: int, username: str) -> None:
+def set_session_user(request: Request, user_id: int, username: str, is_admin: bool = False) -> None:
     request.session["user_id"] = user_id
     request.session["username"] = username
+    request.session["is_admin"] = is_admin
 
 
 def clear_session(request: Request) -> None:
@@ -53,7 +54,11 @@ def get_session_user(request: Request) -> Optional[dict]:
     user_id = request.session.get("user_id")
     username = request.session.get("username")
     if user_id and username:
-        return {"id": user_id, "username": username}
+        return {
+            "id": user_id,
+            "username": username,
+            "is_admin": request.session.get("is_admin", False),
+        }
     return None
 
 

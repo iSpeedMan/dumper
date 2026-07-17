@@ -574,6 +574,189 @@ code {
 .w-full { width: 100%; }
 .hidden { display: none !important; }
 
+/* ============================================================
+   Mobile / Responsive
+   ============================================================ */
+
+/* Hamburger header — hidden on desktop */
+.mobile-header {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: 52px;
+    background: var(--metro-surface);
+    border-bottom: 2px solid var(--border);
+    z-index: 700;
+    align-items: center;
+    gap: 12px;
+    padding: 0 var(--spacing-m);
+}
+
+.hamburger {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    flex-shrink: 0;
+}
+.hamburger span {
+    display: block;
+    width: 22px;
+    height: 2px;
+    background: var(--metro-text);
+    transition: all 0.2s;
+}
+
+/* Sidebar overlay (mobile) */
+.sidebar-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 590;
+}
+.sidebar-overlay.visible { display: block; }
+
+@media (max-width: 768px) {
+    .mobile-header { display: flex; }
+
+    .sidebar {
+        transform: translateX(-100%);
+        transition: transform 0.25s ease;
+        top: 0;
+        z-index: 600;
+    }
+    .sidebar.open { transform: translateX(0); }
+
+    .main-content {
+        margin-left: 0;
+        padding: var(--spacing-m);
+        padding-top: calc(52px + var(--spacing-m));
+    }
+
+    .page-title { font-size: 1.8rem; }
+
+    .stats-grid { grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); }
+
+    /* Stack diff layout on mobile */
+    .diff-layout { grid-template-columns: 1fr; }
+    .diff-sidebar { position: static; }
+
+    /* Stack two-col on mobile */
+    .two-col, .two-col-narrow { grid-template-columns: 1fr; }
+
+    /* Hide action labels on very small screens, show on hover/focus */
+    .action-label { display: none; }
+    .actions { gap: 3px; }
+}
+
+@media (max-width: 480px) {
+    .page-header { margin-bottom: var(--spacing-m); }
+    .header-actions { gap: 4px; }
+    .metro-btn { padding: 6px 10px; }
+}
+
+/* ============================================================
+   Action buttons (inventory table)
+   ============================================================ */
+
+.metro-btn.accent {
+    background: var(--accent-purple);
+    color: #fff;
+}
+.metro-btn.accent:hover {
+    background: #b030c0;
+    color: #fff;
+}
+.metro-btn.success {
+    background: var(--accent-green);
+    color: #fff;
+}
+.metro-btn.success:hover {
+    background: #44bb44;
+    color: #fff;
+}
+
+/* action-btn: icon always visible, label shown from md+ screens */
+.action-btn { gap: 4px; }
+.action-icon { line-height: 1; }
+@media (min-width: 1100px) {
+    .action-label { font-size: 0.72rem; }
+}
+@media (max-width: 1099px) {
+    .action-label { display: none; }
+}
+
+/* ============================================================
+   Commit list — clickable items
+   ============================================================ */
+
+.commit-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 8px var(--spacing-s);
+    background: var(--metro-bg);
+    border-left: 3px solid var(--border);
+    font-size: 0.78rem;
+    text-decoration: none;
+    color: inherit;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+}
+.commit-item:hover {
+    background: var(--metro-surface-hover);
+    border-left-color: var(--accent-blue);
+    color: inherit;
+}
+.commit-item.commit-active {
+    border-left-color: var(--accent-purple);
+    background: rgba(140, 0, 149, 0.08);
+}
+
+.diff-compare-details { margin-bottom: 4px; }
+.diff-compare-summary {
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--metro-text-dim);
+    cursor: pointer;
+    padding: 6px 0;
+    user-select: none;
+}
+.diff-compare-summary:hover { color: var(--metro-text); }
+
+.diff-stat { font-size: 0.78rem; font-weight: 700; }
+
+/* ============================================================
+   User management
+   ============================================================ */
+
+.row-self { background: rgba(18,131,185,0.04) !important; }
+.row-self:hover td { background: rgba(18,131,185,0.08) !important; }
+
+.pw-inline-form { animation: fadeIn 0.15s ease; }
+
+/* Flash message */
+.metro-flash {
+    padding: 10px var(--spacing-m);
+    font-size: 0.875rem;
+    font-weight: 600;
+    margin-bottom: var(--spacing-m);
+    transition: opacity 0.5s ease;
+}
+.metro-flash.ok  { background: rgba(51,153,51,0.15); color: var(--accent-green); border-left: 3px solid var(--accent-green); }
+.metro-flash.err { background: rgba(177,18,3,0.12); color: #e53935; border-left: 3px solid var(--accent-red); }
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-4px); }
+    to   { opacity: 1; transform: none; }
+}
+
 /* ── Lang/Theme controls ── */
 .ctrl-btn {
     background: transparent;

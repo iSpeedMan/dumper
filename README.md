@@ -2,154 +2,228 @@
 
 **Production-ready network configuration backup manager.**
 
-Automatically connects to your network devices (routers, switches, firewalls) via SSH or Telnet, fetches running configurations, stores them in a Git repository with full version history, and shows diffs between any two backups through a clean web UI.
+Автоматически подключается к сетевым устройствам (роутеры, коммутаторы, межсетевые экраны) по SSH или Telnet, получает конфигурации, хранит их в Git-репозитории с полной историей версий и показывает диффы между любыми двумя бэкапами через чистый веб-интерфейс.
 
 ---
 
-## Features
+## Возможности
 
-| Feature | Details |
+| Функция | Описание |
 |---|---|
-| **Web UI** | FastAPI + Jinja2 SSR — no separate frontend build |
-| **Device inventory** | Full CRUD with groups, templates, per-device settings |
-| **Encrypted credentials** | AES-256-GCM (master key in `config.yaml`) |
-| **Git versioning** | Every backup → Git commit. Diff viewer built-in |
-| **Scheduler** | APScheduler cron — global default or per-device |
-| **Concurrent backups** | ThreadPoolExecutor, configurable worker count |
-| **ICMP ping** | Background ping sweep, live status on dashboard |
-| **Notifications** | Rocket.Chat / Mattermost / Slack webhook support |
-| **systemd service** | `dumper.service` included |
+| **Web UI** | FastAPI + Jinja2 SSR — отдельная сборка фронтенда не нужна |
+| **Метро-дизайн** | Metro UI: плоские квадратные углы, тёмная/светлая тема, адаптивный дизайн |
+| **Инвентарь устройств** | Полный CRUD с группами, шаблонами команд, настройками на устройство |
+| **Шифрование учётных данных** | AES-256-GCM (мастер-ключ в `config.yaml`) |
+| **Git-версионирование** | Каждый бэкап → Git-коммит; встроенный просмотр диффов и снимков конфигурации |
+| **Планировщик** | APScheduler cron — глобальный или на каждое устройство |
+| **Параллельные бэкапы** | ThreadPoolExecutor, настраиваемое кол-во воркеров |
+| **ICMP ping** | Фоновый sweep, live-статус на дашборде |
+| **Уведомления** | Webhook для Rocket.Chat / Mattermost / Slack с опциональным git diff |
+| **Аутентификация** | Локальные пользователи (bcrypt) + LDAP / Active Directory |
+| **Управление пользователями** | Панель администратора: роли, смена пароля, вкл/выкл, удаление |
+| **i18n** | Русский / Английский язык (переключение в боковой панели) |
+| **systemd-сервис** | Включён `dumper.service` |
 
-## Supported Device Types (via Netmiko)
+---
+
+## Поддерживаемые типы устройств (через Netmiko)
 
 `cisco_ios`, `cisco_xr`, `cisco_nxos`, `cisco_asa`, `juniper_junos`,
-`arista_eos`, `huawei`, `hp_comware`, `mikrotik_routeros`, and all other
-[Netmiko-supported platforms](https://github.com/ktbyers/netmiko#supported-platforms).
+`arista_eos`, `huawei`, `hp_comware`, `mikrotik_routeros` и все остальные
+[платформы Netmiko](https://github.com/ktbyers/netmiko#supported-platforms).
 
 ---
 
-## Quick Start (Replit / Development)
+## Быстрый старт (Replit / разработка)
 
 ```bash
-# 1. Install dependencies
+# 1. Установить зависимости
 pip install -r requirements.txt
 
-# 2. Generate a master encryption key
-python -c "
-import base64, os
-key = base64.urlsafe_b64encode(os.urandom(32)).decode()
-print('Master key:', key)
-"
-
-# 3. Edit config.yaml
-#    Set: encryption.master_key  (from step 2)
-#    Set: app.secret_key         (any long random string)
-
-# 4. Run
+# 2. Запустить приложение
 python main.py
-# → Open http://localhost:5000
+# → Открыть http://localhost:5000
 ```
+
+При первом запуске:
+1. Мастер-ключ шифрования **генерируется автоматически** и записывается в `config.yaml` — сделайте резервную копию!
+2. Перейдите на `/setup` и создайте первую учётную запись администратора.
 
 ---
 
-## Production Deployment (Linux / systemd)
+## Production-развёртывание (Linux / systemd)
 
 ```bash
-# Create a dedicated user
+# Создать выделенного пользователя
 sudo useradd -r -s /bin/false -d /opt/dumper dumper
 
-# Deploy application files
+# Развернуть файлы приложения
 sudo mkdir -p /opt/dumper
 sudo cp -r . /opt/dumper/
 sudo chown -R dumper:dumper /opt/dumper
 
-# Create Python virtual environment
+# Создать Python venv
 sudo -u dumper python3 -m venv /opt/dumper/venv
 sudo -u dumper /opt/dumper/venv/bin/pip install -r /opt/dumper/requirements.txt
 
-# Configure (edit master_key and secret_key)
+# Настроить (указать master_key и secret_key)
 sudo vim /opt/dumper/config.yaml
 
-# Install and start service
-sudo cp dumper.service /etc/systemd/system/dumper.service
+# Установить и запустить сервис
+sudo cp dumper.service /etc/systemd/system/
 sudo systemctl daemon-reload
 sudo systemctl enable --now dumper
 
-# Check status
+# Проверить статус
 sudo systemctl status dumper
 sudo journalctl -u dumper -f
 ```
 
 ---
 
-## Project Structure
+## Структура проекта
 
 ```
 dumper/
-├── main.py                  # Entry point — FastAPI app factory
-├── config.yaml              # Configuration (edit this!)
+├── main.py                     # Точка входа — FastAPI application factory
+├── config.yaml                 # Конфигурация (редактировать этот файл!)
 ├── requirements.txt
-├── dumper.service           # systemd service unit
+├── dumper.service              # systemd unit
 │
 ├── app/
-│   ├── config.py            # Settings loader (Pydantic)
-│   ├── crypto.py            # AES-256-GCM encrypt/decrypt
-│   ├── database.py          # SQLAlchemy engine + session
-│   ├── models.py            # ORM models (Device, BackupJob, etc.)
-│   ├── backup_engine.py     # SSH/Telnet backup via Netmiko
-│   ├── ping_engine.py       # Concurrent ICMP ping sweep
-│   ├── git_manager.py       # Git versioning via GitPython
-│   ├── scheduler.py         # APScheduler cron jobs
-│   ├── notifications.py     # Webhook dispatcher
+│   ├── auth.py                 # Аутентификация: bcrypt, LDAP, сессии
+│   ├── config.py               # Загрузчик настроек (Pydantic)
+│   ├── crypto.py               # AES-256-GCM шифрование/дешифрование
+│   ├── database.py             # SQLAlchemy engine + сессии
+│   ├── models.py               # ORM-модели (User, Device, BackupJob и др.)
+│   ├── i18n.py                 # Переводы RU/EN
+│   ├── backup_engine.py        # SSH/Telnet бэкап через Netmiko
+│   ├── ping_engine.py          # Параллельный ICMP-sweep
+│   ├── git_manager.py          # Git-версионирование через GitPython
+│   ├── scheduler.py            # APScheduler cron-задания
+│   ├── notifications.py        # Webhook-диспетчер
 │   └── routes/
-│       ├── dashboard.py     # / — live device status + recent jobs
-│       ├── inventory.py     # /inventory/ — device CRUD
-│       ├── templates_routes.py # /templates/ — command templates
-│       ├── diff_viewer.py   # /diff/ — config diff viewer
-│       └── settings.py      # /settings/ — webhooks + scheduler
+│       ├── auth_routes.py      # /setup, /login, /logout, /set-lang, /set-theme
+│       ├── dashboard.py        # / — дашборд (статус устройств, последние бэкапы)
+│       ├── inventory.py        # /inventory/ — управление устройствами
+│       ├── templates_routes.py # /templates/ — шаблоны команд
+│       ├── diff_viewer.py      # /diff/ — просмотр диффов и снимков конфигурации
+│       ├── settings.py         # /settings/ — вебхуки, планировщик, LDAP
+│       └── users.py            # /users/ — управление пользователями (только admin)
 │
-├── templates/               # Jinja2 HTML templates
-├── static/                  # CSS + JS
-│   ├── css/style.css
+├── templates/                  # Jinja2 HTML-шаблоны
+│   ├── base.html               # Базовый layout (сайдбар, навигация, адаптив)
+│   ├── login.html
+│   ├── setup.html
+│   ├── dashboard.html
+│   ├── inventory.html
+│   ├── device_form.html
+│   ├── device_jobs.html
+│   ├── groups.html
+│   ├── templates_list.html
+│   ├── template_form.html
+│   ├── diff_viewer.html
+│   ├── settings.html
+│   └── users.html              # Панель управления пользователями
+│
+├── static/
+│   ├── css/style.css           # Metro UI дизайн-система
 │   └── js/main.js
 │
-├── data/                    # SQLite database (auto-created)
+├── data/                       # SQLite база данных (создаётся автоматически)
 │   └── dumper.db
-└── configs_repo/            # Git repository for device configs (auto-created)
+└── configs_repo/               # Git-репозиторий конфигураций (создаётся автоматически)
 ```
 
 ---
 
-## Configuration
-
-Edit `config.yaml`:
+## Конфигурация (`config.yaml`)
 
 ```yaml
 app:
-  secret_key: "your-long-random-secret"
+  secret_key: "your-long-random-secret"   # Подпись сессий
   port: 5000
   timezone: "Europe/Moscow"
+  debug: false
 
 encryption:
-  master_key: "your-base64-32byte-key"   # CRITICAL — back this up!
+  master_key: "your-base64-32byte-key"    # КРИТИЧНО — сделайте резервную копию!
 
 scheduler:
-  default_cron: "0 3 * * *"   # Daily at 03:00 AM
-  max_workers: 20              # Max concurrent backup threads
-  ping_interval: 60            # ICMP sweep every 60 seconds
+  default_cron: "0 3 * * *"   # Ежедневно в 03:00
+  max_workers: 20              # Макс. параллельных потоков бэкапа
+  ping_interval: 60            # ICMP-sweep каждые 60 секунд
+
+git:
+  repo_path: "configs_repo"
+  author_name: "Dumper"
+  author_email: "dumper@localhost"
+
+database:
+  path: "data/dumper.db"
 ```
 
 ---
 
-## Security Notes
+## Аутентификация и пользователи
 
-- **Master key**: If you lose `encryption.master_key`, all stored credentials become unreadable. Back it up securely (e.g., HashiCorp Vault, a secrets manager).
-- **Rotate key**: Use `crypto.rotate_key()` to re-encrypt all credentials when rotating.
-- **HTTPS**: In production, put Dumper behind an nginx/Caddy reverse proxy with TLS.
-- **systemd hardening**: The included `dumper.service` uses `NoNewPrivileges`, `PrivateTmp`, `ProtectSystem`.
+### Первоначальная настройка
+
+При первом запуске (когда пользователей нет) приложение перенаправляет на `/setup` для создания учётной записи администратора.
+
+### Типы пользователей
+
+| Тип | Описание |
+|---|---|
+| **Локальный** | Пароль хранится в SQLite (bcrypt). Создаётся через панель `/users/` |
+| **LDAP** | Аутентифицируется через Active Directory / LDAP-сервер. Запись в БД создаётся автоматически при первом входе |
+
+### Роли
+
+| Роль | Доступ |
+|---|---|
+| **Администратор** | Полный доступ, включая управление пользователями, настройки LDAP |
+| **Только чтение** | Просмотр дашборда, устройств, бэкапов; запуск бэкапа запрещён |
+
+### Управление пользователями (`/users/`)
+
+Доступно только администраторам. Позволяет:
+- Просматривать всех пользователей (локальных и LDAP)
+- Менять роль (администратор / только чтение)
+- Изменять пароль (только для локальных пользователей)
+- Включать / отключать учётные записи
+- Удалять пользователей (нельзя удалить себя)
+
+### LDAP-настройка
+
+В разделе **Настройки → LDAP** укажите:
+- Адрес сервера и порт
+- Base DN и Bind DN
+- Фильтр поиска (например: `(sAMAccountName={username})`)
+- Флаг SSL/TLS
+
+При успешном LDAP-входе пользователь автоматически появляется в панели `/users/` с типом «ldap».
 
 ---
 
-## License
+## Diff Viewer (`/diff/`)
 
-MIT — feel free to use and adapt.
+- **Клик по коммиту** — просмотр полного снимка конфигурации на момент коммита (активный коммит подсвечивается фиолетовым)
+- **Сравнение** — раскройте секцию «сравнить ↕», выберите два коммита и нажмите «сравнить»
+- Поддерживается до 50 коммитов в истории на устройство
+
+---
+
+## Безопасность
+
+- **Мастер-ключ**: если вы потеряете `encryption.master_key`, все сохранённые учётные данные устройств станут нечитаемы. Обязательно сделайте резервную копию (HashiCorp Vault, менеджер секретов и т.д.).
+- **Ротация ключа**: используйте `crypto.rotate_key()` для повторного шифрования при смене ключа.
+- **HTTPS**: в продакшене разместите Dumper за nginx/Caddy с TLS.
+- **systemd**: включённый `dumper.service` использует `NoNewPrivileges`, `PrivateTmp`, `ProtectSystem`.
+- **Сессии**: 8 часов; подписаны `secret_key` из `config.yaml`.
+
+---
+
+## Лицензия
+
+MIT — используйте и адаптируйте свободно.

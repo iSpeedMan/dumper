@@ -87,6 +87,25 @@ window.testLdap = async function () {
   }
 };
 
+// ── Mobile sidebar toggle ─────────────────────────────────────────────────────
+window.toggleSidebar = function () {
+  const sidebar = document.querySelector(".sidebar");
+  const overlay = document.querySelector(".sidebar-overlay");
+  if (!sidebar) return;
+  sidebar.classList.toggle("open");
+  if (overlay) overlay.classList.toggle("visible");
+};
+
+window.closeSidebar = function () {
+  document.querySelector(".sidebar")?.classList.remove("open");
+  document.querySelector(".sidebar-overlay")?.classList.remove("visible");
+};
+
+// Close sidebar on nav link click (mobile)
+document.querySelectorAll(".nav-link").forEach(link => {
+  link.addEventListener("click", closeSidebar);
+});
+
 // ── Confirm helper ────────────────────────────────────────────────────────────
 document.addEventListener("submit", e => {
   const msg = e.target.dataset.confirm;

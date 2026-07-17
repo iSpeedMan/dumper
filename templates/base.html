@@ -15,6 +15,19 @@
   </script>
 </head>
 <body class="{{ 'theme-light' if theme == 'light' else '' }}">
+
+<!-- Mobile header -->
+<div class="mobile-header">
+  <button class="hamburger" onclick="toggleSidebar()" aria-label="Menu">
+    <span></span><span></span><span></span>
+  </button>
+  <a href="/" style="display:flex;align-items:center;gap:6px;text-decoration:none">
+    <span style="font-size:1.1rem">📦</span>
+    <span class="brand-name" style="font-size:1.1rem">dump<span class="brand-accent">er</span></span>
+  </a>
+</div>
+<div class="sidebar-overlay" onclick="closeSidebar()"></div>
+
 <div class="app-shell">
 
   <!-- Sidebar -->
@@ -47,6 +60,13 @@
           <span class="nav-icon">⚙️</span> {{ t('nav.settings') }}
         </a>
       </li>
+      {% if user and user.get('is_admin', False) %}
+      <li>
+        <a href="/users/" class="nav-link {% if '/users' in request.url.path %}active{% endif %}">
+          <span class="nav-icon">👤</span> {{ t('nav.users') }}
+        </a>
+      </li>
+      {% endif %}
     </ul>
 
     <div class="sidebar-footer">

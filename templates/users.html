@@ -1,0 +1,205 @@
+{% extends "base.html" %}
+
+{% block header_actions %}
+  {# No extra actions in header — add form is inline on page #}
+{% endblock %}
+
+{% block content %}
+
+{# ── Flash messages ── #}
+{% if flash %}
+<div class="metro-flash {% if flash in ('user_created','password_changed') %}ok{% else %}err{% endif %}" id="flash-msg">
+  {% if flash == 'user_created' %}
+    {% if lang == 'ru' %}Пользователь создан.{% else %}User created.{% endif %}
+  {% elif flash == 'password_changed' %}
+    {% if lang == 'ru' %}Пароль изменён.{% else %}Password changed.{% endif %}
+  {% elif flash == 'password_too_short' %}
+    {% if lang == 'ru' %}Пароль слишком короткий (мин. 6 символов).{% else %}Password too short (min 6 chars).{% endif %}
+  {% elif flash == 'user_exists' %}
+    {% if lang == 'ru' %}Пользователь с таким именем уже существует.{% else %}Username already exists.{% endif %}
+  {% elif flash == 'cannot_demote_self' %}
+    {% if lang == 'ru' %}Нельзя снять права администратора с самого себя.{% else %}Cannot remove your own admin role.{% endif %}
+  {% elif flash == 'cannot_disable_self' %}
+    {% if lang == 'ru' %}Нельзя отключить собственную учётную запись.{% else %}Cannot disable your own account.{% endif %}
+  {% elif flash == 'cannot_delete_self' %}
+    {% if lang == 'ru' %}Нельзя удалить собственную учётную запись.{% else %}Cannot delete your own account.{% endif %}
+  {% elif flash == 'ldap_no_password' %}
+    {% if lang == 'ru' %}LDAP-пользователям нельзя изменить пароль здесь.{% else %}Cannot change password for LDAP users.{% endif %}
+  {% elif flash == 'empty_username' %}
+    {% if lang == 'ru' %}Имя пользователя не может быть пустым.{% else %}Username cannot be empty.{% endif %}
+  {% else %}
+    {{ flash }}
+  {% endif %}
+</div>
+<script>setTimeout(()=>{const el=document.getElementById('flash-msg');if(el)el.style.opacity='0';},4000);</script>
+{% endif %}
+
+<div class="two-col-narrow" style="gap: var(--spacing-m); align-items: start;">
+
+  {# ── Left: Add user form ── #}
+  <div class="panel">
+    <div class="panel-header">
+      <span class="panel-title">{{ t('usr.add') }}</span>
+    </div>
+    <div class="panel-body">
+      <form method="post" action="/users/add" class="metro-form">
+        <div class="form-group">
+          <label class="form-label">{{ t('usr.username') }}</label>
+          <input class="metro-input" type="text" name="username" required
+                 autocomplete="off" placeholder="admin2"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">{{ t('usr.new_password') }}</label>
+          <input class="metro-input" type="password" name="password" required
+                 autocomplete="new-password" placeholder="••••••"/>
+          <span class="form-hint">{{ t('usr.password_hint') }}</span>
+        </div>
+        <div class="form-group">
+          <label class="metro-checkbox">
+            <input type="checkbox" name="is_admin" value="on"/>
+            <span class="checkbox-custom"></span>
+            {{ t('usr.admin') }}
+          </label>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="metro-btn primary">{{ t('usr.add') }}</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  {# ── Right: Users table ── #}
+  <div class="panel">
+    <div class="panel-header">
+      <span class="panel-title">{{ t('usr.title') }} ({{ users|length }})</span>
+    </div>
+    <div class="table-wrap">
+      {% if users %}
+      <table class="metro-table">
+        <thead>
+          <tr>
+            <th>{{ t('usr.username') }}</th>
+            <th>{{ t('usr.type') }}</th>
+            <th>{{ t('usr.role') }}</th>
+            <th>{{ t('usr.status') }}</th>
+            <th>{{ t('usr.last_login') }}</th>
+            <th>{{ t('usr.actions') }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for u in users %}
+          <tr {% if u.id == current_user_id %}class="row-self"{% endif %}>
+            <td>
+              <strong>{{ u.username }}</strong>
+              {% if u.id == current_user_id %}
+                <span class="badge blue" style="margin-left:4px">you</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if u.is_ldap %}
+                <span class="badge blue">ldap</span>
+              {% else %}
+                <span class="badge gray">{{ t('usr.local') }}</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if u.is_admin %}
+                <span class="badge orange">{{ t('usr.admin') }}</span>
+              {% else %}
+                <span class="badge gray">{{ t('usr.readonly') }}</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if u.is_active %}
+                <span class="badge green">{{ t('usr.active') }}</span>
+              {% else %}
+                <span class="badge red">{{ t('usr.inactive') }}</span>
+              {% endif %}
+            </td>
+            <td class="small mono text-dim">
+              {% if u.last_login %}
+                {{ u.last_login.strftime('%Y-%m-%d %H:%M') }}
+              {% else %}
+                —
+              {% endif %}
+            </td>
+            <td>
+              <div class="actions" style="flex-wrap:nowrap; gap:4px;">
+
+                {# Role toggle #}
+                {% if u.id != current_user_id %}
+                <form method="post" action="/users/{{ u.id }}/role" style="display:inline">
+                  <button type="submit" class="metro-btn xs {% if u.is_admin %}secondary{% else %}accent{% endif %}"
+                          title="{{ t('usr.change_role') }}">
+                    {% if u.is_admin %}↓ ro{% else %}↑ adm{% endif %}
+                  </button>
+                </form>
+                {% endif %}
+
+                {# Password change (local only) — opens inline form #}
+                {% if not u.is_ldap %}
+                <button class="metro-btn secondary xs"
+                        onclick="togglePwForm({{ u.id }})"
+                        title="{{ t('usr.change_password') }}">🔑</button>
+                {% endif %}
+
+                {# Enable/Disable #}
+                {% if u.id != current_user_id %}
+                <form method="post" action="/users/{{ u.id }}/toggle" style="display:inline">
+                  <button type="submit" class="metro-btn xs {% if u.is_active %}secondary{% else %}success{% endif %}"
+                          title="{{ t('usr.toggle_active') }}">
+                    {% if u.is_active %}⏸{% else %}▶{% endif %}
+                  </button>
+                </form>
+                {% endif %}
+
+                {# Delete #}
+                {% if u.id != current_user_id %}
+                <form method="post" action="/users/{{ u.id }}/delete" style="display:inline"
+                      data-confirm="{{ t('usr.confirm_delete') }}: {{ u.username }}?">
+                  <button type="submit" class="metro-btn danger xs" title="{{ t('usr.delete') }}">✕</button>
+                </form>
+                {% endif %}
+
+              </div>
+
+              {# Inline password form (hidden by default) #}
+              {% if not u.is_ldap %}
+              <form id="pw-form-{{ u.id }}" method="post" action="/users/{{ u.id }}/password"
+                    class="pw-inline-form hidden" style="margin-top:6px;">
+                <div style="display:flex; gap:4px; align-items:center;">
+                  <input class="metro-input" type="password" name="new_password"
+                         placeholder="{{ t('usr.new_password') }}" required
+                         autocomplete="new-password" style="flex:1; padding:4px 8px; font-size:0.78rem;"/>
+                  <button type="submit" class="metro-btn primary xs">ok</button>
+                  <button type="button" class="metro-btn secondary xs"
+                          onclick="togglePwForm({{ u.id }})">✕</button>
+                </div>
+              </form>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+        <div class="empty-state">{{ t('usr.no_users') }}</div>
+      {% endif %}
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function togglePwForm(userId) {
+  const form = document.getElementById('pw-form-' + userId);
+  if (!form) return;
+  form.classList.toggle('hidden');
+  if (!form.classList.contains('hidden')) {
+    form.querySelector('input[type=password]').focus();
+  }
+}
+</script>
+{% endblock %}
