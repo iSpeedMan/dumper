@@ -4,19 +4,35 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>{% block title %}{{ t(page_title) if page_title else 'dumper' }} — dumper{% endblock %}</title>
+  <!-- Preconnect for Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
   <link rel="stylesheet" href="/static/css/style.css"/>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📦</text></svg>"/>
-  <!-- CSRF token for JavaScript fetch calls (read via getCsrfToken() in main.js) -->
+  <!-- CSRF token for JavaScript fetch calls -->
   <meta name="csrf-token" content="{{ csrf_token(request) }}"/>
   <script>
-    // Apply theme before render to prevent flash
+    // Apply theme before paint to prevent flash
     (function(){
-      var c=document.cookie.match(/theme=([^;]+)/);
-      if(c&&c[1]==='light') document.documentElement.style.background='#e5e5e5';
+      var m = document.cookie.match(/theme=([^;]+)/);
+      var light = m && m[1] === 'light';
+      if (light) {
+        document.documentElement.style.background = '#eef2ff';
+        document.addEventListener('DOMContentLoaded', function(){
+          document.body.classList.add('theme-light');
+        });
+      }
     })();
   </script>
 </head>
 <body class="{{ 'theme-light' if theme == 'light' else '' }}">
+
+<!-- Ambient background orbs -->
+<div class="bg-orbs" aria-hidden="true">
+  <div class="bg-orb bg-orb-1"></div>
+  <div class="bg-orb bg-orb-2"></div>
+  <div class="bg-orb bg-orb-3"></div>
+</div>
 
 <!-- Mobile header -->
 <div class="mobile-header">
@@ -35,8 +51,8 @@
   <!-- Sidebar -->
   <nav class="sidebar">
     <div class="sidebar-brand">
-      <a href="/" style="display:flex;align-items:center;gap:8px;text-decoration:none">
-        <span style="font-size:1.3rem">📦</span>
+      <a href="/" style="display:flex;align-items:center;gap:10px;text-decoration:none">
+        <span style="font-size:1.4rem">📦</span>
         <span class="brand-name">dump<span class="brand-accent">er</span></span>
       </a>
     </div>
@@ -74,16 +90,16 @@
     <div class="sidebar-footer">
       {% if user %}
       <div class="sidebar-user">
-        <span>◉</span>
+        <span style="font-size:1rem;opacity:0.6">◉</span>
         <div>
           <strong>{{ user.username }}</strong><br>
-          <a href="/logout" style="color:var(--metro-text-dim);font-size:0.72rem;">{{ t('nav.logout') }}</a>
+          <a href="/logout">{{ t('nav.logout') }}</a>
         </div>
       </div>
       {% endif %}
       <div class="sidebar-controls">
         <!-- Theme toggle -->
-        <button class="ctrl-btn" onclick="toggleTheme()" title="Toggle theme">
+        <button class="ctrl-btn" onclick="toggleTheme()" title="Toggle theme" style="font-size:0.95rem;padding:4px 8px">
           {{ '☾' if theme != 'light' else '☼' }}
         </button>
         <!-- Language switch -->

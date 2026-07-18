@@ -4,12 +4,22 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>{{ t('auth.setup_title') }} — dumper</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
   <link rel="stylesheet" href="/static/css/style.css"/>
 </head>
 <body>
+
+<!-- Ambient background orbs -->
+<div class="bg-orbs" aria-hidden="true">
+  <div class="bg-orb bg-orb-1"></div>
+  <div class="bg-orb bg-orb-2"></div>
+  <div class="bg-orb bg-orb-3"></div>
+</div>
+
 <div class="auth-screen">
   <div class="auth-box">
-    <div class="auth-brand"><strong>dump</strong>er</div>
+    <div class="auth-brand">📦 <strong>dump</strong>er</div>
     <h1 class="auth-title">{{ t('auth.setup_title') }}</h1>
     <p class="auth-subtitle">{{ t('auth.setup_desc') }}</p>
 
@@ -27,7 +37,7 @@
         <label class="form-label">{{ t('auth.password') }}</label>
         <input class="metro-input" type="password" name="password" required/>
       </div>
-      <button type="submit" class="metro-btn primary w-full">{{ t('auth.create_admin') }}</button>
+      <button type="submit" class="metro-btn primary w-full" style="margin-top:4px">{{ t('auth.create_admin') }}</button>
     </form>
   </div>
 </div>

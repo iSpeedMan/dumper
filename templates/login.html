@@ -4,15 +4,28 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>{{ t('auth.login_title') }} — dumper</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
   <link rel="stylesheet" href="/static/css/style.css"/>
   <script>
-    (function(){var c=document.cookie.match(/theme=([^;]+)/);if(c&&c[1]==='light')document.documentElement.style.background='#e5e5e5';})();
+    (function(){
+      var m = document.cookie.match(/theme=([^;]+)/);
+      if (m && m[1] === 'light') document.documentElement.style.background = '#eef2ff';
+    })();
   </script>
 </head>
 <body class="{{ 'theme-light' if request.cookies.get('theme') == 'light' else '' }}">
+
+<!-- Ambient background orbs -->
+<div class="bg-orbs" aria-hidden="true">
+  <div class="bg-orb bg-orb-1"></div>
+  <div class="bg-orb bg-orb-2"></div>
+  <div class="bg-orb bg-orb-3"></div>
+</div>
+
 <div class="auth-screen">
   <div class="auth-box">
-    <div class="auth-brand"><strong>dump</strong>er</div>
+    <div class="auth-brand">📦 <strong>dump</strong>er</div>
     <h1 class="auth-title">{{ t('auth.login_title') }}</h1>
     <p class="auth-subtitle">network configuration backup</p>
 
@@ -31,13 +44,13 @@
         <label class="form-label">{{ t('auth.password') }}</label>
         <input class="metro-input" type="password" name="password" autocomplete="current-password" required/>
       </div>
-      <button type="submit" class="metro-btn primary w-full">{{ t('auth.sign_in') }}</button>
+      <button type="submit" class="metro-btn primary w-full" style="margin-top:4px">{{ t('auth.sign_in') }}</button>
     </form>
 
-    <div style="margin-top:20px; display:flex; gap:8px; justify-content:flex-end;">
+    <div style="margin-top:20px; display:flex; gap:8px; justify-content:flex-end; align-items:center;">
       <button class="ctrl-btn {% if lang == 'ru' %}active{% endif %}" onclick="switchLang('ru')">ru</button>
       <button class="ctrl-btn {% if lang == 'en' %}active{% endif %}" onclick="switchLang('en')">en</button>
-      <button class="ctrl-btn" onclick="toggleTheme()">{{ '☾' if request.cookies.get('theme') != 'light' else '☼' }}</button>
+      <button class="ctrl-btn" onclick="toggleTheme()" style="font-size:0.9rem">{{ '☾' if request.cookies.get('theme') != 'light' else '☼' }}</button>
     </div>
   </div>
 </div>
