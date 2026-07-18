@@ -12,8 +12,7 @@
     <div class="search-wrap">
       <input class="metro-input" type="text" id="search-input"
              placeholder="{{ t('inv.search') }}"
-             oninput="filterTable('search-input','devices-table')"
-             style="padding:6px 10px 6px 32px; width:200px;"/>
+             oninput="filterTable('search-input','devices-table')"/>
     </div>
   </div>
   <div class="table-wrap">
@@ -36,7 +35,7 @@
         <tr>
           <td><strong>{{ device.name }}</strong>
             {% if not device.backup_enabled %}
-              <span class="badge gray" style="margin-left:4px">off</span>
+              <span class="badge gray ml-1">off</span>
             {% endif %}
           </td>
           <td class="mono small">{{ device.hostname }}:{{ device.port }}</td>

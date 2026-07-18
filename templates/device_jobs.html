@@ -11,8 +11,8 @@
 
 {% block content %}
 <!-- Device meta bar -->
-<div class="panel" style="margin-bottom:var(--spacing-m)">
-  <div class="panel-body" style="padding:10px var(--spacing-m); display:flex; align-items:center; gap:var(--spacing-m); flex-wrap:wrap;">
+<div class="panel mb-m">
+  <div class="panel-body device-info-bar">
     <strong>{{ device.name }}</strong>
     <span class="mono small">{{ device.hostname }}:{{ device.port }}</span>
     <span class="badge gray">{{ device.netmiko_device_type }}</span>

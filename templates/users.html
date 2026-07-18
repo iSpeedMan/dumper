@@ -41,7 +41,7 @@
     <div class="panel-header">
       <span class="panel-title">{{ t('usr.add') }}</span>
     </div>
-    <div class="panel-body" style="padding: var(--sp-3) var(--spacing-m);">
+    <div class="panel-body panel-body--sm">
       <form method="post" action="/users/add">
         <input type="hidden" name="csrf_token" value="{{ csrf_token(request) }}"/>
         <div class="user-add-row">
@@ -56,14 +56,14 @@
                    autocomplete="new-password" placeholder="••••••"
                    title="{{ t('usr.password_hint') }}"/>
           </div>
-          <div class="form-group narrow" style="justify-content:flex-end;padding-bottom:1px">
+          <div class="form-group narrow form-group--end-pb">
             <label class="metro-checkbox">
               <input type="checkbox" name="is_admin" value="on"/>
               <span class="checkbox-custom"></span>
-              <span style="font-size:0.72rem;color:var(--text-secondary)">{{ t('usr.admin') }}</span>
+              <span class="admin-label">{{ t('usr.admin') }}</span>
             </label>
           </div>
-          <div class="form-group narrow" style="justify-content:flex-end;padding-bottom:1px">
+          <div class="form-group narrow form-group--end-pb">
             <button type="submit" class="metro-btn primary">{{ t('usr.add') }}</button>
           </div>
         </div>
@@ -95,7 +95,7 @@
             <td>
               <strong>{{ u.username }}</strong>
               {% if u.id == current_user_id %}
-                <span class="badge blue" style="margin-left:4px">you</span>
+                <span class="badge blue ml-1">you</span>
               {% endif %}
             </td>
             <td>
@@ -127,7 +127,7 @@
               {% endif %}
             </td>
             <td>
-              <div class="actions" style="flex-wrap:nowrap; gap:4px;">
+              <div class="actions actions--nowrap">
 
                 {# Role toggle #}
                 {% if u.id != current_user_id %}
@@ -172,12 +172,12 @@
               {# Inline password form (hidden by default) #}
               {% if not u.is_ldap %}
               <form id="pw-form-{{ u.id }}" method="post" action="/users/{{ u.id }}/password"
-                    class="pw-inline-form hidden" style="margin-top:6px;">
+                    class="pw-inline-form hidden">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token(request) }}"/>
-                <div style="display:flex; gap:4px; align-items:center;">
-                  <input class="metro-input" type="password" name="new_password"
+                <div class="pw-inline-row">
+                  <input class="metro-input pw-input" type="password" name="new_password"
                          placeholder="{{ t('usr.new_password') }}" required
-                         autocomplete="new-password" style="flex:1; padding:4px 8px; font-size:0.78rem;"/>
+                         autocomplete="new-password"/>
                   <button type="submit" class="metro-btn primary xs">ok</button>
                   <button type="button" class="metro-btn secondary xs"
                           onclick="togglePwForm({{ u.id }})">✕</button>

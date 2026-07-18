@@ -36,9 +36,9 @@
   <button class="hamburger" onclick="toggleSidebar()" aria-label="Menu">
     <span></span><span></span><span></span>
   </button>
-  <a href="/" style="display:flex;align-items:center;gap:6px;text-decoration:none">
+  <a href="/" class="brand-link">
     <span class="brand-emoji">📦</span>
-    <span class="brand-name" style="font-size:1.05rem">dump<span class="brand-accent">er</span></span>
+    <span class="brand-name">dump<span class="brand-accent">er</span></span>
   </a>
 </div>
 <div class="sidebar-overlay" onclick="closeSidebar()"></div>
@@ -48,7 +48,7 @@
   <!-- Sidebar -->
   <nav class="sidebar">
     <div class="sidebar-brand">
-      <a href="/" style="display:flex;align-items:center;gap:9px;text-decoration:none">
+      <a href="/" class="brand-link">
         <span class="brand-emoji">📦</span>
         <span class="brand-name">dump<span class="brand-accent">er</span></span>
       </a>
@@ -108,7 +108,7 @@
     <div class="sidebar-footer">
       {% if user %}
       <div class="sidebar-user">
-        <span style="opacity:0.5;font-size:0.8rem">◉</span>
+        <span class="user-dot">◉</span>
         <div>
           <strong>{{ user.username }}</strong><br>
           <a href="/logout">{{ t('nav.logout') }}</a>

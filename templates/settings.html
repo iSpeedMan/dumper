@@ -8,8 +8,7 @@
   <div class="panel-body">
 
     <!-- Add webhook form -->
-    <form method="post" action="/settings/webhooks/add" class="metro-form"
-          style="padding-bottom:var(--spacing-m); border-bottom:1px solid var(--glass-border); margin-bottom:var(--spacing-m)">
+    <form method="post" action="/settings/webhooks/add" class="metro-form webhook-add-section">
       <input type="hidden" name="csrf_token" value="{{ csrf_token(request) }}"/>
       <div class="form-row">
         <div class="form-group">
@@ -22,7 +21,7 @@
                  placeholder="https://chat.example.com/hooks/TOKEN"/>
         </div>
       </div>
-      <div style="display:flex; gap:var(--sp-6); flex-wrap:wrap; margin-bottom:var(--sp-3)">
+      <div class="flex-row-wrap">
         <label class="metro-checkbox">
           <input type="hidden" name="on_backup_fail" value="false"/>
           <input type="checkbox" name="on_backup_fail" value="true" checked/>
@@ -72,7 +71,7 @@
               {% if wh.on_ping_fail %}<span class="badge orange">ping</span> {% endif %}
               {% if wh.send_diff %}<span class="badge gray">diff</span> {% endif %}
             </td>
-            <td class="mono small" style="max-width:320px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap">
+            <td class="mono small td-url">
               {{ wh.url[:80] }}{% if wh.url|length > 80 %}…{% endif %}
             </td>
             <td class="actions">
@@ -157,7 +156,7 @@
           <input class="metro-input" type="number" name="ldap_port"
                  value="{{ app_settings.get('ldap_port', '389') }}"/>
         </div>
-        <div class="form-group" style="justify-content:flex-end;padding-top:18px">
+        <div class="form-group form-group--end">
           <label class="metro-checkbox">
             <input type="hidden" name="ldap_use_ssl" value="false"/>
             <input type="checkbox" name="ldap_use_ssl" value="true"

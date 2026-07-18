@@ -179,6 +179,7 @@ TRANSLATIONS: Dict[str, Dict[str, str]] = {
     "diff.current_config":  {"ru": "текущий конфиг",        "en": "current config"},
     "diff.no_config":       {"ru": "конфиг ещё не снимался.", "en": "no config yet."},
     "diff.vs":              {"ru": "→",                     "en": "→"},
+    "diff.view_commit":     {"ru": "снимок коммита",        "en": "commit snapshot"},
 
     # --- Users ---
     "nav.users":            {"ru": "пользователи",          "en": "users"},

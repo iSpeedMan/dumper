@@ -854,7 +854,7 @@ label.metro-checkbox {
 
 /* Search box */
 .search-wrap { position: relative; }
-.search-wrap .metro-input { padding-left: 32px; }
+.search-wrap .metro-input { padding-left: 32px; width: 200px; }
 .search-wrap::before {
   content: '⌕';
   position: absolute;
@@ -945,6 +945,7 @@ body.theme-light .code-block {
   display: flex;
   flex-direction: column;
   gap: var(--sp-1);
+  margin-top: var(--spacing-s);
 }
 
 .commit-item {
@@ -1246,12 +1247,113 @@ code {
 }
 
 /* ============================================================
+   Brand links (mobile header + sidebar)
+   ============================================================ */
+.brand-link {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+}
+.mobile-header .brand-link { gap: 6px; }
+.sidebar-brand  .brand-link { gap: 9px; }
+
+/* Sidebar user status dot */
+.user-dot { opacity: 0.5; font-size: 0.8rem; }
+
+/* ============================================================
+   Panel body variants
+   ============================================================ */
+.panel-body--flush { padding: 0; }
+.panel-body--sm    { padding: var(--sp-3) var(--spacing-m); }
+
+/* Form panels with max-width */
+.panel-form { max-width: 700px; }
+
+/* ============================================================
+   Diff viewer extras
+   ============================================================ */
+.diff-sidebar-body  { padding: var(--spacing-s); }
+.diff-compare-form  { padding-top: var(--spacing-s); }
+.diff-header-meta   { font-size: 0.78rem; }
+.panel-title code   { font-size: 0.85rem; }
+.diff-stat .text-red { margin-left: 6px; }
+
+/* Monospace selects (commit picker) */
+.select-mono { font-family: var(--font-mono); font-size: 0.78rem; }
+
+/* ============================================================
+   Device jobs info bar
+   ============================================================ */
+.device-info-bar {
+  padding: 10px var(--spacing-m);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-m);
+  flex-wrap: wrap;
+}
+
+/* ============================================================
+   General utilities
+   ============================================================ */
+.ml-1 { margin-left: 4px; }
+
+/* ============================================================
+   Auth pages (login / setup)
+   ============================================================ */
+.login-actions {
+  margin-top: 20px;
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  align-items: center;
+}
+.auth-box .metro-btn.primary { margin-top: 4px; }
+.auth-box .ctrl-btn          { font-size: 0.9rem; }
+
+/* ============================================================
+   Settings page helpers
+   ============================================================ */
+.webhook-add-section {
+  padding-bottom: var(--spacing-m);
+  border-bottom: 1px solid var(--glass-border);
+  margin-bottom: var(--spacing-m);
+}
+.flex-row-wrap {
+  display: flex;
+  gap: var(--sp-6);
+  flex-wrap: wrap;
+  margin-bottom: var(--sp-3);
+}
+.td-url {
+  max-width: 320px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.form-group--end    { justify-content: flex-end; padding-top: 18px; }
+.form-group--end-pb { justify-content: flex-end; padding-bottom: 1px; }
+
+/* ============================================================
+   Users page helpers
+   ============================================================ */
+.admin-label     { font-size: 0.72rem; color: var(--text-secondary); }
+.actions--nowrap { flex-wrap: nowrap; gap: 4px; }
+.pw-inline-row   { display: flex; gap: 4px; align-items: center; }
+.pw-input        { flex: 1; padding: 4px 8px; font-size: 0.78rem; }
+
+/* ============================================================
+   Textarea size modifiers
+   ============================================================ */
+.metro-textarea--sm { min-height: 50px; }
+.metro-textarea--xs { min-height: 60px; }
+
+/* ============================================================
    User management
    ============================================================ */
 .row-self { background: var(--accent-blue-dim) !important; }
 .row-self:hover td { background: rgba(79,179,232,0.08) !important; }
 
-.pw-inline-form { animation: fadeSlideUp 0.14s ease both; }
+.pw-inline-form { animation: fadeSlideUp 0.14s ease both; margin-top: 6px; }
 
 /* ============================================================
    Action buttons (inventory table)

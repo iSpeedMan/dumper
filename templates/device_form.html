@@ -5,7 +5,7 @@
 {% endblock %}
 
 {% block content %}
-<div class="panel" style="max-width:700px">
+<div class="panel panel-form">
   <div class="panel-header">
     <span class="panel-title">{{ t(page_title) }}</span>
   </div>
@@ -116,8 +116,7 @@
 
       <div class="form-group">
         <label class="form-label">{{ t('dev.description') }}</label>
-        <textarea class="metro-textarea" name="description" rows="2"
-                  style="min-height:60px">{{ device.description if device else '' }}</textarea>
+        <textarea class="metro-textarea metro-textarea--xs" name="description" rows="2">{{ device.description if device else '' }}</textarea>
       </div>
 
       <div class="form-actions">
