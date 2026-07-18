@@ -72,8 +72,8 @@
         <div class="panel-header">
           <span class="panel-title">{{ commit_a[:8] }} {{ t('diff.vs') }} {{ commit_b[:8] }}</span>
           <span class="diff-stat">
-            <span class="text-green">+{{ diff_text.splitlines()|select("match","^\\+[^+]")|list|length }}</span>
-            <span class="text-red">-{{ diff_text.splitlines()|select("match","^-[^-]")|list|length }}</span>
+            <span class="text-green">+{{ diff_added }}</span>
+            <span class="text-red">-{{ diff_removed }}</span>
           </span>
         </div>
         <div class="panel-body panel-body--flush">

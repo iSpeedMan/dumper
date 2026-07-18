@@ -87,14 +87,24 @@ async def diff_compare(
     current_config = git_mgr.get_latest_config(device.name, group_name) or ""
 
     diff_text = ""
+    diff_added = 0
+    diff_removed = 0
     if commit_a and commit_b:
         diff_text = git_mgr.get_diff_between_commits(
             device.name, group_name, commit_a, commit_b
         )
+        if diff_text:
+            for line in diff_text.splitlines():
+                if line.startswith('+') and not line.startswith('+++'):
+                    diff_added += 1
+                elif line.startswith('-') and not line.startswith('---'):
+                    diff_removed += 1
 
-    return templates.TemplateResponse(request, "diff_viewer.html",
-        _base_ctx(request, user, device, history, current_config,
-                  diff_text=diff_text, commit_a=commit_a, commit_b=commit_b))
+    ctx = _base_ctx(request, user, device, history, current_config,
+                    diff_text=diff_text, commit_a=commit_a, commit_b=commit_b)
+    ctx["diff_added"] = diff_added
+    ctx["diff_removed"] = diff_removed
+    return templates.TemplateResponse(request, "diff_viewer.html", ctx)
 
 
 @router.get("/{device_id}/view/{sha}", response_class=HTMLResponse)
