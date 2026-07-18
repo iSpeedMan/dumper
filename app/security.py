@@ -234,10 +234,15 @@ class CSRFMiddleware(BaseHTTPMiddleware):
         # Try header first (for AJAX), then form body
         submitted = request.headers.get(CSRF_HEADER)
         if not submitted:
-            # Starlette _CachedRequest caches the body after the first parse,
-            # so reading form() here is safe — the route handler sees the same data.
+            # IMPORTANT: call request.body() BEFORE request.form().
+            # Starlette's _CachedRequest.wrapped_receive only replays the body
+            # to downstream handlers when self._body is set (i.e. body() was called).
+            # form() reads from stream() which marks _stream_consumed=True but does NOT
+            # set _body — so wrapped_receive would send an empty body to the route handler.
+            # Calling body() first caches the raw bytes; then form() yields from _body.
             try:
-                form = await request.form()
+                await request.body()          # ensures _body is cached
+                form = await request.form()   # now reads safely from _body via stream()
                 submitted = form.get(CSRF_TOKEN_FIELD, "")
             except Exception:
                 submitted = ""

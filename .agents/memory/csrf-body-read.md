@@ -6,10 +6,10 @@ description: Starlette 0.37 _CachedRequest.wrapped_receive replays self._body; s
 # CSRF Middleware Body Reading
 
 ## Rule
-Reading `await request.form()` inside a `BaseHTTPMiddleware.dispatch()` implementation is safe — the downstream route handler can still read the same form data.
+Always call `await request.body()` BEFORE `await request.form()` in a `BaseHTTPMiddleware.dispatch()` implementation — then the route handler can still read the same form data.
 
 ## Why
-Starlette 0.37.2 uses `_CachedRequest` (subclass of `Request`) in `BaseHTTPMiddleware`. Its `wrapped_receive` method checks `getattr(self, "_body", None)` — if `body()` was already called by the middleware, it replays `self._body` for the downstream `call_next` receive callable. No double-consume problem.
+Starlette 0.37.2 uses `_CachedRequest` in `BaseHTTPMiddleware`. Its `wrapped_receive` checks `getattr(self, "_body", None)` and replays the cached body to downstream handlers — BUT only if `_body` was set via `request.body()`. Calling `form()` directly reads via `stream()`, sets `_stream_consumed=True` WITHOUT setting `_body`, so `wrapped_receive` sends an empty body downstream → route handler gets 422 (missing form fields).
 
 ## How to apply
 - Call `await request.form()` in middleware dispatch → body cached in `request._body`
