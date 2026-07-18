@@ -1,4 +1,4 @@
-date/
+data/
 venv/
 .cache/
 .agents/
@@ -7,3 +7,4 @@ attached_assets/
 config.yaml
 replit.md
 configs_repo/*
+__pycache__/
