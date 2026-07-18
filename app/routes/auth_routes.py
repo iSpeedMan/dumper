@@ -36,13 +36,10 @@ async def setup_get(request: Request, db: Session = Depends(get_db)):
     if db.query(User).count() > 0:
         return RedirectResponse(url="/login", status_code=302)
     lang = _get_lang(request)
-    return templates.TemplateResponse("setup.html", {
-        "request": request,
-        "t": make_translator(lang),
+    return templates.TemplateResponse(request, "setup.html", {        "t": make_translator(lang),
         "lang": lang,
         "error": None,
-        "page_title": "setup",
-    })
+        "page_title": "setup"})
 
 
 @router.post("/setup")
@@ -57,13 +54,10 @@ async def setup_post(
 
     lang = _get_lang(request)
     if len(password) < 6:
-        return templates.TemplateResponse("setup.html", {
-            "request": request,
-            "t": make_translator(lang),
+        return templates.TemplateResponse(request, "setup.html", {            "t": make_translator(lang),
             "lang": lang,
             "error": "Пароль должен быть не менее 6 символов" if lang == "ru" else "Password must be at least 6 characters",
-            "page_title": "setup",
-        })
+            "page_title": "setup"})
 
     user = User(
         username=username.strip(),
@@ -96,13 +90,10 @@ async def login_get(request: Request, db: Session = Depends(get_db)):
         return RedirectResponse(url="/", status_code=302)
 
     lang = _get_lang(request)
-    return templates.TemplateResponse("login.html", {
-        "request": request,
-        "t": make_translator(lang),
+    return templates.TemplateResponse(request, "login.html", {        "t": make_translator(lang),
         "lang": lang,
         "error": None,
-        "page_title": "login",
-    })
+        "page_title": "login"})
 
 
 @router.post("/login")
@@ -128,13 +119,10 @@ async def login_post(
             if lang == "ru"
             else f"Too many failed attempts. Try again in {minutes} min."
         )
-        return templates.TemplateResponse("login.html", {
-            "request": request,
-            "t": make_translator(lang),
+        return templates.TemplateResponse(request, "login.html", {            "t": make_translator(lang),
             "lang": lang,
             "error": error_msg,
-            "page_title": "login",
-        })
+            "page_title": "login"})
 
     # 1. Try local DB auth
     user_id = authenticate_local(username, password, db)
@@ -185,13 +173,10 @@ async def login_post(
     else:
         error_msg = "auth.wrong_creds"
 
-    return templates.TemplateResponse("login.html", {
-        "request": request,
-        "t": make_translator(lang),
+    return templates.TemplateResponse(request, "login.html", {        "t": make_translator(lang),
         "lang": lang,
         "error": error_msg,
-        "page_title": "login",
-    })
+        "page_title": "login"})
 
 
 # ---------------------------------------------------------------------------

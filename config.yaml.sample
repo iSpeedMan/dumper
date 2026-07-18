@@ -1,13 +1,10 @@
 # ==============================================================================
 # Dumper — Configuration File
+# Copy this file to config.yaml and edit the values below.
+#
+# Generate a random master key:
+#   python3 -c "import base64, os; print(base64.urlsafe_b64encode(os.urandom(32)).decode())"
 # ==============================================================================
-
-```python
-python3 -c "
-import base64, os
-key = base64.urlsafe_b64encode(os.urandom(32)).decode()
-print('Master key:', key)
-"```
 
 app:
   name: "Dumper"
@@ -28,10 +25,11 @@ database:
 # Encryption
 # Master key for AES-256-GCM device credential encryption.
 # IMPORTANT: Keep this secret and back it up. Losing it means losing all creds.
-# Generate with: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+# Generate with:
+#   python3 -c "import base64, os; print(base64.urlsafe_b64encode(os.urandom(32)).decode())"
 # ------------------------------------------------------------------------------
 encryption:
-  master_key: "CHANGE_ME_to_a_long_random_string_32chars="
+  master_key: "CHANGE_ME_base64_encoded_32byte_key"
 
 # ------------------------------------------------------------------------------
 # Git repository for config storage

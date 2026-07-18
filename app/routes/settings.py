@@ -60,17 +60,14 @@ async def settings_page(
 
     app_settings = _get_settings(db)
 
-    return templates.TemplateResponse("settings.html", {
-        "request": request,
-        "t": make_translator(lang),
+    return templates.TemplateResponse(request, "settings.html", {        "t": make_translator(lang),
         "lang": lang,
         "theme": request.cookies.get("theme", "dark"),
         "user": user,
         "webhooks": webhooks,
         "scheduler_jobs": jobs,
         "app_settings": app_settings,
-        "page_title": "set.title",
-    })
+        "page_title": "set.title"})
 
 
 # ---------------------------------------------------------------------------

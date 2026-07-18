@@ -49,9 +49,7 @@ async def dashboard(
 
     devices = db.query(Device).order_by(Device.status, Device.name).limit(100).all()
 
-    return templates.TemplateResponse("dashboard.html", {
-        "request": request,
-        "t": make_translator(lang),
+    return templates.TemplateResponse(request, "dashboard.html", {        "t": make_translator(lang),
         "lang": lang,
         "theme": request.cookies.get("theme", "dark"),
         "user": user,
@@ -63,8 +61,7 @@ async def dashboard(
         "success_24h": success_24h,
         "failed_24h": failed_24h,
         "devices": devices,
-        "page_title": "dash.title",
-    })
+        "page_title": "dash.title"})
 
 
 @router.get("/api/stats")

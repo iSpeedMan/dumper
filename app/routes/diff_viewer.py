@@ -31,7 +31,6 @@ def _base_ctx(request: Request, user, device: Device, history: list,
               active_commit=None) -> dict:
     lang = _lang(request)
     return {
-        "request": request,
         "t": make_translator(lang),
         "lang": lang,
         "theme": request.cookies.get("theme", "dark"),
@@ -65,7 +64,7 @@ async def diff_view(
     history = git_mgr.get_commit_history(device.name, group_name, max_count=50)
     current_config = git_mgr.get_latest_config(device.name, group_name) or ""
 
-    return templates.TemplateResponse("diff_viewer.html",
+    return templates.TemplateResponse(request, "diff_viewer.html",
         _base_ctx(request, user, device, history, current_config))
 
 
@@ -93,7 +92,7 @@ async def diff_compare(
             device.name, group_name, commit_a, commit_b
         )
 
-    return templates.TemplateResponse("diff_viewer.html",
+    return templates.TemplateResponse(request, "diff_viewer.html",
         _base_ctx(request, user, device, history, current_config,
                   diff_text=diff_text, commit_a=commit_a, commit_b=commit_b))
 
@@ -121,7 +120,7 @@ async def diff_view_commit(
     # Find metadata for the active commit
     active_commit = next((c for c in history if c["sha"] == sha), None)
 
-    return templates.TemplateResponse("diff_viewer.html",
+    return templates.TemplateResponse(request, "diff_viewer.html",
         _base_ctx(request, user, device, history, current_config,
                   active_sha=sha, view_config=view_config,
                   active_commit=active_commit))

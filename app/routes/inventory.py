@@ -62,17 +62,14 @@ async def inventory_list(
     devices = db.query(Device).order_by(Device.name).all()
     groups = db.query(DeviceGroup).order_by(DeviceGroup.name).all()
     last_dates = _last_config_dates([d.id for d in devices], db)
-    return templates.TemplateResponse("inventory.html", {
-        "request": request,
-        "t": make_translator(lang),
+    return templates.TemplateResponse(request, "inventory.html", {        "t": make_translator(lang),
         "lang": lang,
         "theme": request.cookies.get("theme", "dark"),
         "user": user,
         "devices": devices,
         "groups": groups,
         "last_dates": last_dates,
-        "page_title": "inv.title",
-    })
+        "page_title": "inv.title"})
 
 
 @router.get("/add", response_class=HTMLResponse)
@@ -84,9 +81,7 @@ async def device_add_form(
     lang = _lang(request)
     groups = db.query(DeviceGroup).order_by(DeviceGroup.name).all()
     tmplates = db.query(BackupTemplate).order_by(BackupTemplate.name).all()
-    return templates.TemplateResponse("device_form.html", {
-        "request": request,
-        "t": make_translator(lang),
+    return templates.TemplateResponse(request, "device_form.html", {        "t": make_translator(lang),
         "lang": lang,
         "theme": request.cookies.get("theme", "dark"),
         "user": user,
@@ -94,8 +89,7 @@ async def device_add_form(
         "groups": groups,
         "templates": tmplates,
         "netmiko_types": NETMIKO_TYPES,
-        "page_title": "dev.add_title",
-    })
+        "page_title": "dev.add_title"})
 
 
 @router.post("/add")
@@ -176,9 +170,7 @@ async def device_edit_form(
         "backup_enabled": device.backup_enabled,
         "description": device.description or "",
     }
-    return templates.TemplateResponse("device_form.html", {
-        "request": request,
-        "t": make_translator(lang),
+    return templates.TemplateResponse(request, "device_form.html", {        "t": make_translator(lang),
         "lang": lang,
         "theme": request.cookies.get("theme", "dark"),
         "user": user,
@@ -186,8 +178,7 @@ async def device_edit_form(
         "groups": groups,
         "templates": tmplates,
         "netmiko_types": NETMIKO_TYPES,
-        "page_title": "dev.edit_title",
-    })
+        "page_title": "dev.edit_title"})
 
 
 @router.post("/{device_id}/edit")
@@ -284,16 +275,13 @@ async def device_jobs(
         .limit(50)
         .all()
     )
-    return templates.TemplateResponse("device_jobs.html", {
-        "request": request,
-        "t": make_translator(lang),
+    return templates.TemplateResponse(request, "device_jobs.html", {        "t": make_translator(lang),
         "lang": lang,
         "theme": request.cookies.get("theme", "dark"),
         "user": user,
         "device": device,
         "jobs": jobs,
-        "page_title": "job.title",
-    })
+        "page_title": "job.title"})
 
 
 # --- Groups ---
@@ -306,15 +294,12 @@ async def groups_list(
 ):
     lang = _lang(request)
     groups = db.query(DeviceGroup).order_by(DeviceGroup.name).all()
-    return templates.TemplateResponse("groups.html", {
-        "request": request,
-        "t": make_translator(lang),
+    return templates.TemplateResponse(request, "groups.html", {        "t": make_translator(lang),
         "lang": lang,
         "theme": request.cookies.get("theme", "dark"),
         "user": user,
         "groups": groups,
-        "page_title": "grp.title",
-    })
+        "page_title": "grp.title"})
 
 
 @router.post("/groups/add")

@@ -80,6 +80,29 @@ class Settings(BaseModel):
 # ---------------------------------------------------------------------------
 
 CONFIG_PATH = Path(os.environ.get("DUMPER_CONFIG", "config.yaml"))
+_SAMPLE_PATH = CONFIG_PATH.parent / "config.yaml.sample"
+
+
+def _bootstrap_config() -> None:
+    """
+    On first run (no config.yaml), copy config.yaml.sample → config.yaml so
+    the master-key auto-generation in main.py has a file to write into.
+    Runs once at import time, before settings are loaded.
+    """
+    if CONFIG_PATH.exists():
+        return
+    if _SAMPLE_PATH.exists():
+        CONFIG_PATH.write_text(_SAMPLE_PATH.read_text(encoding="utf-8"), encoding="utf-8")
+        print(
+            f"[INFO] First run: copied '{_SAMPLE_PATH}' → '{CONFIG_PATH}'.\n"
+            "       A random encryption master key will be generated automatically.\n"
+            "       Edit config.yaml to customise settings."
+        )
+    else:
+        print(f"[WARNING] Neither '{CONFIG_PATH}' nor '{_SAMPLE_PATH}' found. Using built-in defaults.")
+
+
+_bootstrap_config()
 
 
 @lru_cache(maxsize=1)

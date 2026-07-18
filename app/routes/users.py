@@ -34,7 +34,6 @@ def _tpl_ctx(request: Request, user: dict, db: Session, extra: dict | None = Non
     """Build common template context."""
     lang = _lang(request)
     ctx = {
-        "request": request,
         "t": make_translator(lang),
         "lang": lang,
         "theme": request.cookies.get("theme", "dark"),
@@ -70,12 +69,11 @@ async def users_list(
     users = db.query(User).order_by(User.created_at).all()
     flash = request.query_params.get("flash")
 
-    return templates.TemplateResponse("users.html", {
+    return templates.TemplateResponse(request, "users.html", {
         **_tpl_ctx(request, current_user, db),
         "users": users,
         "current_user_id": current_user["id"],
-        "flash": flash,
-    })
+        "flash": flash})
 
 
 # ---------------------------------------------------------------------------

@@ -27,15 +27,12 @@ async def templates_list(
 ):
     lang = _lang(request)
     tmplates = db.query(BackupTemplate).order_by(BackupTemplate.name).all()
-    return templates.TemplateResponse("templates_list.html", {
-        "request": request,
-        "t": make_translator(lang),
+    return templates.TemplateResponse(request, "templates_list.html", {        "t": make_translator(lang),
         "lang": lang,
         "theme": request.cookies.get("theme", "dark"),
         "user": user,
         "templates": tmplates,
-        "page_title": "tpl.title",
-    })
+        "page_title": "tpl.title"})
 
 
 @router.get("/add", response_class=HTMLResponse)
@@ -44,15 +41,12 @@ async def template_add_form(
     user=Depends(require_auth),
 ):
     lang = _lang(request)
-    return templates.TemplateResponse("template_form.html", {
-        "request": request,
-        "t": make_translator(lang),
+    return templates.TemplateResponse(request, "template_form.html", {        "t": make_translator(lang),
         "lang": lang,
         "theme": request.cookies.get("theme", "dark"),
         "user": user,
         "template": None,
-        "page_title": "tpl.add_title",
-    })
+        "page_title": "tpl.add_title"})
 
 
 @router.post("/add")
@@ -86,15 +80,12 @@ async def template_edit_form(
     tmpl = db.get(BackupTemplate, template_id)
     if not tmpl:
         raise HTTPException(status_code=404, detail="Template not found")
-    return templates.TemplateResponse("template_form.html", {
-        "request": request,
-        "t": make_translator(lang),
+    return templates.TemplateResponse(request, "template_form.html", {        "t": make_translator(lang),
         "lang": lang,
         "theme": request.cookies.get("theme", "dark"),
         "user": user,
         "template": tmpl,
-        "page_title": "tpl.edit_title",
-    })
+        "page_title": "tpl.edit_title"})
 
 
 @router.post("/{template_id}/edit")
