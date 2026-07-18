@@ -36,34 +36,36 @@
 
 <div class="two-col-narrow" style="gap: var(--spacing-m); align-items: start;">
 
-  {# ── Left: Add user form ── #}
+  {# ── Add user — compact inline panel ── #}
   <div class="panel">
     <div class="panel-header">
       <span class="panel-title">{{ t('usr.add') }}</span>
     </div>
-    <div class="panel-body">
-      <form method="post" action="/users/add" class="metro-form">
+    <div class="panel-body" style="padding: var(--sp-3) var(--spacing-m);">
+      <form method="post" action="/users/add">
         <input type="hidden" name="csrf_token" value="{{ csrf_token(request) }}"/>
-        <div class="form-group">
-          <label class="form-label">{{ t('usr.username') }}</label>
-          <input class="metro-input" type="text" name="username" required
-                 autocomplete="off" placeholder="admin2"/>
-        </div>
-        <div class="form-group">
-          <label class="form-label">{{ t('usr.new_password') }}</label>
-          <input class="metro-input" type="password" name="password" required
-                 autocomplete="new-password" placeholder="••••••"/>
-          <span class="form-hint">{{ t('usr.password_hint') }}</span>
-        </div>
-        <div class="form-group">
-          <label class="metro-checkbox">
-            <input type="checkbox" name="is_admin" value="on"/>
-            <span class="checkbox-custom"></span>
-            {{ t('usr.admin') }}
-          </label>
-        </div>
-        <div class="form-actions">
-          <button type="submit" class="metro-btn primary">{{ t('usr.add') }}</button>
+        <div class="user-add-row">
+          <div class="form-group">
+            <label class="form-label">{{ t('usr.username') }}</label>
+            <input class="metro-input" type="text" name="username" required
+                   autocomplete="off" placeholder="admin2"/>
+          </div>
+          <div class="form-group">
+            <label class="form-label">{{ t('usr.new_password') }}</label>
+            <input class="metro-input" type="password" name="password" required
+                   autocomplete="new-password" placeholder="••••••"
+                   title="{{ t('usr.password_hint') }}"/>
+          </div>
+          <div class="form-group narrow" style="justify-content:flex-end;padding-bottom:1px">
+            <label class="metro-checkbox" title="{{ t('usr.admin') }}">
+              <input type="checkbox" name="is_admin" value="on"/>
+              <span class="checkbox-custom"></span>
+              <span style="font-size:0.72rem;color:var(--text-secondary)">{{ t('usr.admin') }}</span>
+            </label>
+          </div>
+          <div class="form-group narrow" style="justify-content:flex-end;padding-bottom:1px">
+            <button type="submit" class="metro-btn primary">{{ t('usr.add') }}</button>
+          </div>
         </div>
       </form>
     </div>

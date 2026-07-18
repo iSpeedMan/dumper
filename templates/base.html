@@ -4,20 +4,17 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>{% block title %}{{ t(page_title) if page_title else 'dumper' }} — dumper{% endblock %}</title>
-  <!-- Preconnect for Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
   <link rel="stylesheet" href="/static/css/style.css"/>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📦</text></svg>"/>
-  <!-- CSRF token for JavaScript fetch calls -->
   <meta name="csrf-token" content="{{ csrf_token(request) }}"/>
   <script>
-    // Apply theme before paint to prevent flash
     (function(){
       var m = document.cookie.match(/theme=([^;]+)/);
       var light = m && m[1] === 'light';
       if (light) {
-        document.documentElement.style.background = '#eef2ff';
+        document.documentElement.style.background = '#eaeef8';
         document.addEventListener('DOMContentLoaded', function(){
           document.body.classList.add('theme-light');
         });
@@ -40,8 +37,8 @@
     <span></span><span></span><span></span>
   </button>
   <a href="/" style="display:flex;align-items:center;gap:6px;text-decoration:none">
-    <span style="font-size:1.1rem">📦</span>
-    <span class="brand-name" style="font-size:1.1rem">dump<span class="brand-accent">er</span></span>
+    <span class="brand-emoji">📦</span>
+    <span class="brand-name" style="font-size:1.05rem">dump<span class="brand-accent">er</span></span>
   </a>
 </div>
 <div class="sidebar-overlay" onclick="closeSidebar()"></div>
@@ -51,8 +48,8 @@
   <!-- Sidebar -->
   <nav class="sidebar">
     <div class="sidebar-brand">
-      <a href="/" style="display:flex;align-items:center;gap:10px;text-decoration:none">
-        <span style="font-size:1.4rem">📦</span>
+      <a href="/" style="display:flex;align-items:center;gap:9px;text-decoration:none">
+        <span class="brand-emoji">📦</span>
         <span class="brand-name">dump<span class="brand-accent">er</span></span>
       </a>
     </div>
@@ -60,28 +57,49 @@
     <ul class="nav-links">
       <li>
         <a href="/" class="nav-link {% if request.url.path == '/' %}active{% endif %}">
-          <span class="nav-icon">🏠</span> {{ t('nav.dashboard') }}
+          <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="1" y="1" width="6" height="6" rx="1"/><rect x="9" y="1" width="6" height="6" rx="1"/>
+            <rect x="1" y="9" width="6" height="6" rx="1"/><rect x="9" y="9" width="6" height="6" rx="1"/>
+          </svg>
+          <span class="nav-label">{{ t('nav.dashboard') }}</span>
         </a>
       </li>
       <li>
         <a href="/inventory/" class="nav-link {% if '/inventory' in request.url.path %}active{% endif %}">
-          <span class="nav-icon">🖥</span> {{ t('nav.inventory') }}
+          <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+            <rect x="1" y="2" width="14" height="4" rx="1"/><rect x="1" y="8.5" width="14" height="4" rx="1"/>
+            <circle cx="13" cy="4" r="0.9" fill="currentColor" stroke="none"/>
+            <circle cx="13" cy="10.5" r="0.9" fill="currentColor" stroke="none"/>
+          </svg>
+          <span class="nav-label">{{ t('nav.inventory') }}</span>
         </a>
       </li>
       <li>
         <a href="/templates/" class="nav-link {% if '/templates' in request.url.path %}active{% endif %}">
-          <span class="nav-icon">📋</span> {{ t('nav.templates') }}
+          <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+            <rect x="2" y="1" width="12" height="14" rx="1"/>
+            <line x1="5" y1="5" x2="11" y2="5"/><line x1="5" y1="8" x2="11" y2="8"/><line x1="5" y1="11" x2="9" y2="11"/>
+          </svg>
+          <span class="nav-label">{{ t('nav.templates') }}</span>
         </a>
       </li>
       <li>
         <a href="/settings/" class="nav-link {% if '/settings' in request.url.path %}active{% endif %}">
-          <span class="nav-icon">⚙️</span> {{ t('nav.settings') }}
+          <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+            <circle cx="8" cy="8" r="2.2"/>
+            <path d="M8 1.5v1.8M8 12.7v1.8M1.5 8h1.8M12.7 8h1.8M3.6 3.6l1.3 1.3M11.1 11.1l1.3 1.3M3.6 12.4l1.3-1.3M11.1 4.9l1.3-1.3"/>
+          </svg>
+          <span class="nav-label">{{ t('nav.settings') }}</span>
         </a>
       </li>
       {% if user and user.get('is_admin', False) %}
       <li>
         <a href="/users/" class="nav-link {% if '/users' in request.url.path %}active{% endif %}">
-          <span class="nav-icon">👤</span> {{ t('nav.users') }}
+          <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+            <circle cx="8" cy="5" r="2.8"/>
+            <path d="M2 14c0-3.3 2.7-6 6-6s6 2.7 6 6"/>
+          </svg>
+          <span class="nav-label">{{ t('nav.users') }}</span>
         </a>
       </li>
       {% endif %}
@@ -90,7 +108,7 @@
     <div class="sidebar-footer">
       {% if user %}
       <div class="sidebar-user">
-        <span style="font-size:1rem;opacity:0.6">◉</span>
+        <span style="opacity:0.5;font-size:0.8rem">◉</span>
         <div>
           <strong>{{ user.username }}</strong><br>
           <a href="/logout">{{ t('nav.logout') }}</a>
@@ -99,7 +117,7 @@
       {% endif %}
       <div class="sidebar-controls">
         <!-- Theme toggle -->
-        <button class="ctrl-btn" onclick="toggleTheme()" title="Toggle theme" style="font-size:0.95rem;padding:4px 8px">
+        <button class="ctrl-btn" onclick="toggleTheme()" title="Toggle theme">
           {{ '☾' if theme != 'light' else '☼' }}
         </button>
         <!-- Language switch -->
