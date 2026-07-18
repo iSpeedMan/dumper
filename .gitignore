@@ -1,0 +1,9 @@
+date/
+venv/
+.cache/
+.agents/
+.replit
+attached_assets/
+config.yaml
+replit.md
+configs_repo/*
