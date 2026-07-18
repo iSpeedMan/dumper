@@ -34,9 +34,9 @@
 <script>setTimeout(()=>{const el=document.getElementById('flash-msg');if(el)el.style.opacity='0';},4000);</script>
 {% endif %}
 
-<div class="two-col-narrow" style="gap: var(--spacing-m); align-items: start;">
+<div class="panels-stack">
 
-  {# ── Add user — compact inline panel ── #}
+  {# ── Add user — full-width compact panel ── #}
   <div class="panel">
     <div class="panel-header">
       <span class="panel-title">{{ t('usr.add') }}</span>
@@ -57,7 +57,7 @@
                    title="{{ t('usr.password_hint') }}"/>
           </div>
           <div class="form-group narrow" style="justify-content:flex-end;padding-bottom:1px">
-            <label class="metro-checkbox" title="{{ t('usr.admin') }}">
+            <label class="metro-checkbox">
               <input type="checkbox" name="is_admin" value="on"/>
               <span class="checkbox-custom"></span>
               <span style="font-size:0.72rem;color:var(--text-secondary)">{{ t('usr.admin') }}</span>
@@ -71,7 +71,7 @@
     </div>
   </div>
 
-  {# ── Right: Users table ── #}
+  {# ── Users table — full width ── #}
   <div class="panel">
     <div class="panel-header">
       <span class="panel-title">{{ t('usr.title') }} ({{ users|length }})</span>

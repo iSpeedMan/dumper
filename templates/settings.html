@@ -2,18 +2,16 @@
 
 {% block content %}
 
-<!-- Webhooks + Scheduler -->
-<div class="two-col" style="margin-bottom:var(--spacing-m)">
+<!-- Webhooks -->
+<div class="panel">
+  <div class="panel-header"><span class="panel-title">{{ t('set.webhooks') }}</span></div>
+  <div class="panel-body">
 
-  <!-- Webhooks -->
-  <div class="panel">
-    <div class="panel-header"><span class="panel-title">{{ t('set.webhooks') }}</span></div>
-    <div class="panel-body">
-
-      <!-- Add webhook form -->
-      <form method="post" action="/settings/webhooks/add" class="metro-form"
-            style="padding-bottom:var(--spacing-m); border-bottom:1px solid var(--border); margin-bottom:var(--spacing-m)">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token(request) }}"/>
+    <!-- Add webhook form -->
+    <form method="post" action="/settings/webhooks/add" class="metro-form"
+          style="padding-bottom:var(--spacing-m); border-bottom:1px solid var(--glass-border); margin-bottom:var(--spacing-m)">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token(request) }}"/>
+      <div class="form-row">
         <div class="form-group">
           <label class="form-label">{{ t('set.webhook_name') }} *</label>
           <input class="metro-input" type="text" name="name" required placeholder="Rocket.Chat alerts"/>
@@ -23,30 +21,32 @@
           <input class="metro-input" type="url" name="url" required
                  placeholder="https://chat.example.com/hooks/TOKEN"/>
         </div>
-        <div style="display:flex; gap:var(--spacing-m); flex-wrap:wrap; margin-bottom:8px">
-          <label class="metro-checkbox">
-            <input type="hidden" name="on_backup_fail" value="false"/>
-            <input type="checkbox" name="on_backup_fail" value="true" checked/>
-            <span class="checkbox-custom"></span>
-            {{ t('set.on_backup_fail') }}
-          </label>
-          <label class="metro-checkbox">
-            <input type="hidden" name="on_ping_fail" value="false"/>
-            <input type="checkbox" name="on_ping_fail" value="true" checked/>
-            <span class="checkbox-custom"></span>
-            {{ t('set.on_ping_fail') }}
-          </label>
-          <label class="metro-checkbox">
-            <input type="hidden" name="send_diff" value="false"/>
-            <input type="checkbox" name="send_diff" value="true"/>
-            <span class="checkbox-custom"></span>
-            {{ t('set.send_diff') }}
-          </label>
-        </div>
-        <button type="submit" class="metro-btn primary sm">{{ t('set.add') }}</button>
-      </form>
+      </div>
+      <div style="display:flex; gap:var(--sp-6); flex-wrap:wrap; margin-bottom:var(--sp-3)">
+        <label class="metro-checkbox">
+          <input type="hidden" name="on_backup_fail" value="false"/>
+          <input type="checkbox" name="on_backup_fail" value="true" checked/>
+          <span class="checkbox-custom"></span>
+          {{ t('set.on_backup_fail') }}
+        </label>
+        <label class="metro-checkbox">
+          <input type="hidden" name="on_ping_fail" value="false"/>
+          <input type="checkbox" name="on_ping_fail" value="true" checked/>
+          <span class="checkbox-custom"></span>
+          {{ t('set.on_ping_fail') }}
+        </label>
+        <label class="metro-checkbox">
+          <input type="hidden" name="send_diff" value="false"/>
+          <input type="checkbox" name="send_diff" value="true"/>
+          <span class="checkbox-custom"></span>
+          {{ t('set.send_diff') }}
+        </label>
+      </div>
+      <button type="submit" class="metro-btn primary sm">{{ t('set.add') }}</button>
+    </form>
 
-      {% if webhooks %}
+    {% if webhooks %}
+    <div class="table-wrap">
       <table class="metro-table">
         <thead>
           <tr>
@@ -72,8 +72,8 @@
               {% if wh.on_ping_fail %}<span class="badge orange">ping</span> {% endif %}
               {% if wh.send_diff %}<span class="badge gray">diff</span> {% endif %}
             </td>
-            <td class="mono small" style="max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap">
-              {{ wh.url[:50] }}{% if wh.url|length > 50 %}…{% endif %}
+            <td class="mono small" style="max-width:320px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap">
+              {{ wh.url[:80] }}{% if wh.url|length > 80 %}…{% endif %}
             </td>
             <td class="actions">
               <form method="post" action="/settings/webhooks/{{ wh.id }}/toggle" style="display:inline">
@@ -90,41 +90,40 @@
           {% endfor %}
         </tbody>
       </table>
-      {% else %}
-        <div class="empty-state sm">{{ t('set.no_webhooks') }}</div>
-      {% endif %}
     </div>
+    {% else %}
+      <div class="empty-state sm">{{ t('set.no_webhooks') }}</div>
+    {% endif %}
   </div>
+</div>
 
-  <!-- Scheduler -->
-  <div class="panel">
-    <div class="panel-header"><span class="panel-title">{{ t('set.scheduler') }}</span></div>
-    <div class="table-wrap">
-      {% if scheduler_jobs %}
-      <table class="metro-table">
-        <thead>
-          <tr>
-            <th>{{ t('set.job_id') }}</th>
-            <th>{{ t('set.job_name') }}</th>
-            <th>{{ t('set.next_run') }}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for job in scheduler_jobs %}
-          <tr>
-            <td class="mono small">{{ job.id }}</td>
-            <td class="small">{{ job.name }}</td>
-            <td class="mono small">{{ job.next_run[:16] if job.next_run != 'N/A' else 'N/A' }}</td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-      {% else %}
-        <div class="empty-state sm">{{ t('set.no_jobs') }}</div>
-      {% endif %}
-    </div>
+<!-- Scheduler -->
+<div class="panel">
+  <div class="panel-header"><span class="panel-title">{{ t('set.scheduler') }}</span></div>
+  <div class="table-wrap">
+    {% if scheduler_jobs %}
+    <table class="metro-table">
+      <thead>
+        <tr>
+          <th>{{ t('set.job_id') }}</th>
+          <th>{{ t('set.job_name') }}</th>
+          <th>{{ t('set.next_run') }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for job in scheduler_jobs %}
+        <tr>
+          <td class="mono small">{{ job.id }}</td>
+          <td class="small">{{ job.name }}</td>
+          <td class="mono small">{{ job.next_run[:16] if job.next_run != 'N/A' else 'N/A' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+      <div class="empty-state sm">{{ t('set.no_jobs') }}</div>
+    {% endif %}
   </div>
-
 </div>
 
 <!-- LDAP Settings -->
@@ -146,28 +145,27 @@
         </label>
       </div>
 
-      <div class="form-row">
+      <div class="form-row trio">
         <div class="form-group">
           <label class="form-label">{{ t('ldap.server') }}</label>
           <input class="metro-input" type="text" name="ldap_server"
                  value="{{ app_settings.get('ldap_server', '') }}"
                  placeholder="ldap://dc.example.com"/>
         </div>
-        <div class="form-group" style="max-width:140px">
+        <div class="form-group">
           <label class="form-label">{{ t('ldap.port') }}</label>
           <input class="metro-input" type="number" name="ldap_port"
                  value="{{ app_settings.get('ldap_port', '389') }}"/>
         </div>
-      </div>
-
-      <div class="form-group">
-        <label class="metro-checkbox">
-          <input type="hidden" name="ldap_use_ssl" value="false"/>
-          <input type="checkbox" name="ldap_use_ssl" value="true"
-            {% if app_settings.get('ldap_use_ssl') == 'true' %}checked{% endif %}/>
-          <span class="checkbox-custom"></span>
-          {{ t('ldap.use_ssl') }}
-        </label>
+        <div class="form-group" style="justify-content:flex-end;padding-top:18px">
+          <label class="metro-checkbox">
+            <input type="hidden" name="ldap_use_ssl" value="false"/>
+            <input type="checkbox" name="ldap_use_ssl" value="true"
+              {% if app_settings.get('ldap_use_ssl') == 'true' %}checked{% endif %}/>
+            <span class="checkbox-custom"></span>
+            {{ t('ldap.use_ssl') }}
+          </label>
+        </div>
       </div>
 
       <div class="form-row">
