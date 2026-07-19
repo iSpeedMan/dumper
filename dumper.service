@@ -1,7 +1,12 @@
 # ==============================================================================
 # Dumper — systemd service unit
 #
-# Installation:
+# Quick install (use install.sh for full setup):
+#   sudo bash install.sh
+#
+# Manual install:
+#   sudo useradd -r -s /sbin/nologin -d /opt/dumper dumper
+#   sudo chown -R dumper:dumper /opt/dumper/data /opt/dumper/configs_repo
 #   sudo cp dumper.service /etc/systemd/system/dumper.service
 #   sudo systemctl daemon-reload
 #   sudo systemctl enable --now dumper
@@ -17,6 +22,13 @@ After=network.target network-online.target
 Wants=network-online.target
 
 [Service]
+# ── Pre-start: ensure writable dirs exist and are owned by service user ───────
+# The '+' prefix runs these commands as root regardless of User= below.
+# This fixes "attempt to write a readonly database" on first start or after
+# a manual run as root created the directories with wrong ownership.
+ExecStartPre=+/bin/mkdir -p /opt/dumper/data /opt/dumper/configs_repo
+ExecStartPre=+/bin/chown -R dumper:dumper /opt/dumper/data /opt/dumper/configs_repo
+
 # ── Process ──────────────────────────────────────────────────────────────────
 Type=simple
 WorkingDirectory=/opt/dumper
@@ -29,13 +41,13 @@ TimeoutStopSec=30s
 # ── Security ─────────────────────────────────────────────────────────────────
 User=dumper
 Group=dumper
-# If running as root is required for raw ICMP sockets, use root
-# and grant CAP_NET_RAW instead:
+# If running as root is required for raw ICMP sockets (ping sweep), uncomment:
 # AmbientCapabilities=CAP_NET_RAW
+# CapabilityBoundingSet=CAP_NET_RAW
 
 # ── Environment ──────────────────────────────────────────────────────────────
 Environment=DUMPER_CONFIG=/opt/dumper/config.yaml
-# Keep master key in a separate secrets file, not in this unit:
+# Keep master key in a separate secrets file outside the unit:
 # EnvironmentFile=/etc/dumper/secrets.env
 
 # ── Resource limits ──────────────────────────────────────────────────────────
