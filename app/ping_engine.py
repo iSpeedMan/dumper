@@ -22,14 +22,35 @@ FAIL_THRESHOLD = 2
 
 
 def _ping_host(hostname: str, timeout: float = 2.0) -> Tuple[bool, Optional[float]]:
-    """Ping a single host. Returns (reachable, rtt_ms)."""
+    """Ping a single host.  Returns (reachable, rtt_ms).
+
+    Probe order (stops at first definitive answer):
+      1. icmplib privileged=True  — raw ICMP socket; needs CAP_NET_RAW / root.
+      2. icmplib privileged=False — DGRAM socket; needs net.ipv4.ping_group_range.
+         NOTE: if this returns is_alive=False we do NOT trust it — the kernel may
+         simply have denied the socket without raising an exception. Fall through.
+      3. subprocess ping           — uses the setuid system binary; always works.
+    """
+    # 1. Try raw ICMP (works when service has CAP_NET_RAW or runs as root)
+    try:
+        from icmplib import ping as icmp_ping
+        result = icmp_ping(hostname, count=1, timeout=timeout, privileged=True)
+        return result.is_alive, (result.avg_rtt if result.is_alive else None)
+    except Exception:
+        pass  # PermissionError or not installed — try next
+
+    # 2. Try unprivileged icmplib DGRAM socket
     try:
         from icmplib import ping as icmp_ping
         result = icmp_ping(hostname, count=1, timeout=timeout, privileged=False)
-        return result.is_alive, (result.avg_rtt if result.is_alive else None)
+        if result.is_alive:
+            # Positive result is reliable; negative may be a false-negative
+            # (kernel denied socket silently) — fall through to subprocess.
+            return True, result.avg_rtt
     except Exception:
-        pass
+        pass  # PermissionError — fall through
 
+    # 3. subprocess ping — most portable; uses setuid binary on Linux/macOS
     try:
         system = platform.system().lower()
         if system == "windows":
@@ -37,9 +58,13 @@ def _ping_host(hostname: str, timeout: float = 2.0) -> Tuple[bool, Optional[floa
         else:
             cmd = ["ping", "-c", "1", "-W", str(int(timeout)), hostname]
 
-        proc = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=timeout + 1)
+        proc = subprocess.run(
+            cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+            timeout=timeout + 1,
+        )
         return proc.returncode == 0, None
-    except Exception:
+    except Exception as exc:
+        logger.debug("subprocess ping failed for %s: %s", hostname, exc)
         return False, None
 
 
