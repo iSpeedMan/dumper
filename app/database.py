@@ -86,6 +86,15 @@ def _migrate_schema(engine) -> None:
         except Exception:
             pass  # Column already exists
 
+        # devices.retention_days (added in v1.2)
+        try:
+            conn.execute(text(
+                "ALTER TABLE devices ADD COLUMN retention_days INTEGER"
+            ))
+            conn.commit()
+        except Exception:
+            pass  # Column already exists
+
 
 def init_db() -> None:
     """Create all tables and run lightweight schema migrations."""

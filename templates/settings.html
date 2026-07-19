@@ -119,6 +119,23 @@
         </div>
       </div>
     </form>
+
+    <!-- Global retention form -->
+    <div class="panel-section-title" style="margin-top:var(--spacing-m)">{{ t('set.retention') }}</div>
+    <form method="post" action="/settings/retention/save" class="metro-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token(request) }}"/>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">{{ t('set.retention_days') }}</label>
+          <input class="metro-input" type="number" name="retention_days" min="1"
+                 value="{{ retention_days }}" required/>
+          <span class="form-hint">{{ t('set.retention_hint') }}</span>
+        </div>
+        <div class="form-group form-group--end">
+          <button type="submit" class="metro-btn primary">{{ t('set.save') }}</button>
+        </div>
+      </div>
+    </form>
   </div>
 
   <!-- Active jobs table -->

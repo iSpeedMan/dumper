@@ -65,6 +65,12 @@ async def settings_page(
     app_settings = _get_settings(db)
     backup_cron = app_settings.get("backup_cron") or _get_default_cron_from_db()
 
+    from app.retention import DEFAULT_RETENTION_DAYS
+    try:
+        retention_days = int(app_settings.get("retention_days", DEFAULT_RETENTION_DAYS))
+    except (TypeError, ValueError):
+        retention_days = DEFAULT_RETENTION_DAYS
+
     return templates.TemplateResponse(request, "settings.html", {
         "t": make_translator(lang),
         "lang": lang,
@@ -74,6 +80,7 @@ async def settings_page(
         "scheduler_jobs": jobs,
         "app_settings": app_settings,
         "backup_cron": backup_cron,
+        "retention_days": retention_days,
         "page_title": "set.title",
     })
 
@@ -214,6 +221,21 @@ async def scheduler_save(
     except Exception as exc:
         logger.error("Failed to reschedule default backup: %s", exc)
 
+    return RedirectResponse(url="/settings/", status_code=303)
+
+
+@router.post("/retention/save")
+async def retention_save(
+    request: Request,
+    retention_days: int = Form(...),
+    db: Session = Depends(get_db),
+    user=Depends(require_auth),
+):
+    """Save global backup retention period."""
+    if retention_days < 1:
+        retention_days = 1
+    _set_setting(db, "retention_days", str(retention_days))
+    db.commit()
     return RedirectResponse(url="/settings/", status_code=303)
 
 

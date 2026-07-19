@@ -109,9 +109,17 @@ async def device_add(
     template_id: Optional[int] = Form(None),
     custom_cron: str = Form(""),
     backup_enabled: Optional[str] = Form(None),
+    retention_days: Optional[str] = Form(None),
     description: str = Form(""),
 ):
     from app.crypto import encrypt
+    _retention: Optional[int] = None
+    if retention_days and retention_days.strip():
+        try:
+            v = int(retention_days)
+            _retention = v if v > 0 else None
+        except ValueError:
+            pass
     device = Device(
         name=name,
         hostname=hostname,
@@ -125,6 +133,7 @@ async def device_add(
         template_id=template_id or None,
         custom_cron=custom_cron.strip() or None,
         backup_enabled=backup_enabled == "true",
+        retention_days=_retention,
         description=description,
     )
     db.add(device)
@@ -168,6 +177,7 @@ async def device_edit_form(
         "template_id": device.template_id,
         "custom_cron": device.custom_cron or "",
         "backup_enabled": device.backup_enabled,
+        "retention_days": device.retention_days if device.retention_days is not None else "",
         "description": device.description or "",
     }
     return templates.TemplateResponse(request, "device_form.html", {        "t": make_translator(lang),
@@ -199,11 +209,20 @@ async def device_edit(
     template_id: Optional[int] = Form(None),
     custom_cron: str = Form(""),
     backup_enabled: Optional[str] = Form(None),
+    retention_days: Optional[str] = Form(None),
     description: str = Form(""),
 ):
     device = db.get(Device, device_id)
     if not device:
         raise HTTPException(status_code=404, detail="Device not found")
+
+    _retention: Optional[int] = None
+    if retention_days and retention_days.strip():
+        try:
+            v = int(retention_days)
+            _retention = v if v > 0 else None
+        except ValueError:
+            pass
 
     device.name = name
     device.hostname = hostname
@@ -219,6 +238,7 @@ async def device_edit(
     device.template_id = template_id or None
     device.custom_cron = custom_cron.strip() or None
     device.backup_enabled = backup_enabled == "true"
+    device.retention_days = _retention
     device.description = description
 
     db.commit()

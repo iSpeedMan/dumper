@@ -81,6 +81,8 @@ TRANSLATIONS: Dict[str, Dict[str, str]] = {
     "dev.no_template":      {"ru": "— без шаблона —",       "en": "— no template —"},
     "dev.custom_cron":      {"ru": "custom cron (пусто = глобальный)", "en": "custom cron (blank = global)"},
     "dev.cron_hint":        {"ru": "формат: минута час день месяц день_недели", "en": "format: minute hour day month weekday"},
+    "dev.retention_days":   {"ru": "хранить бэкапы (дней)",  "en": "keep backups (days)"},
+    "dev.retention_hint":   {"ru": "пусто — использовать глобальное значение", "en": "blank — use global default"},
     "dev.backup_enabled":   {"ru": "бэкап включён",         "en": "backup enabled"},
     "dev.description":      {"ru": "описание",              "en": "description"},
     "dev.save":             {"ru": "сохранить",             "en": "save"},
@@ -133,6 +135,9 @@ TRANSLATIONS: Dict[str, Dict[str, str]] = {
     "set.backup_cron":      {"ru": "cron-выражение",        "en": "cron expression"},
     "set.backup_cron_hint": {"ru": "5 полей: минута час день месяц день_недели. Пример: 0 3 * * * = ежедневно в 03:00", "en": "5 fields: minute hour day month weekday. Example: 0 3 * * * = daily at 03:00"},
     "set.cron_invalid":     {"ru": "недопустимое cron-выражение (ожидается 5 полей)", "en": "invalid cron expression (5 fields expected)"},
+    "set.retention":        {"ru": "хранение бэкапов (глобально)", "en": "backup retention (global)"},
+    "set.retention_days":   {"ru": "хранить бэкапы (дней)",  "en": "keep backups (days)"},
+    "set.retention_hint":   {"ru": "применяется ко всем устройствам без индивидуального значения. Записи старше этого срока удаляются ежедневно в 04:00", "en": "applies to all devices without an individual value. Records older than this are deleted daily at 04:00"},
 
     # --- LDAP ---
     "ldap.title":           {"ru": "ldap аутентификация",   "en": "ldap authentication"},

@@ -105,6 +105,7 @@ class Device(Base):
     template_id = Column(Integer, ForeignKey("backup_templates.id"), nullable=True)
     custom_cron = Column(String(64), nullable=True)
     backup_enabled = Column(Boolean, default=True, nullable=False)
+    retention_days = Column(Integer, nullable=True)  # None = use global default
     description = Column(Text, nullable=True)
 
     status = Column(Enum(DeviceStatus), default=DeviceStatus.UNKNOWN, nullable=False)

@@ -104,14 +104,23 @@
         <span class="form-hint">{{ t('dev.cron_hint') }}</span>
       </div>
 
-      <div class="form-group">
-        <label class="metro-checkbox">
-          <input type="hidden" name="backup_enabled" value="false"/>
-          <input type="checkbox" name="backup_enabled" value="true"
-            {% if not device or device.backup_enabled %}checked{% endif %}/>
-          <span class="checkbox-custom"></span>
-          {{ t('dev.backup_enabled') }}
-        </label>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">{{ t('dev.retention_days') }}</label>
+          <input class="metro-input" type="number" name="retention_days" min="1"
+                 value="{{ device.retention_days if device else '' }}"
+                 placeholder="{{ t('dev.retention_hint') }}"/>
+          <span class="form-hint">{{ t('dev.retention_hint') }}</span>
+        </div>
+        <div class="form-group form-group--end">
+          <label class="metro-checkbox">
+            <input type="hidden" name="backup_enabled" value="false"/>
+            <input type="checkbox" name="backup_enabled" value="true"
+              {% if not device or device.backup_enabled %}checked{% endif %}/>
+            <span class="checkbox-custom"></span>
+            {{ t('dev.backup_enabled') }}
+          </label>
+        </div>
       </div>
 
       <div class="form-group">

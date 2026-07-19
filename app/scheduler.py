@@ -70,6 +70,15 @@ def get_scheduler() -> BackgroundScheduler:
 # Job functions (these run in background threads)
 # ---------------------------------------------------------------------------
 
+def _job_retention_sweep() -> None:
+    """Background job: apply backup retention policy to all devices."""
+    try:
+        from app.retention import run_retention_for_all_devices
+        run_retention_for_all_devices()
+    except Exception as exc:
+        logger.error("Retention sweep job failed: %s", exc)
+
+
 def _job_ping_sweep() -> None:
     """Background job: ping all devices."""
     try:
@@ -202,7 +211,22 @@ def start_scheduler() -> None:
         except Exception as exc:
             logger.error("Failed to register default backup job (cron='%s'): %s", cron_expr, exc)
 
-    # --- 3. Register custom cron jobs for devices ---
+    # --- 3. Daily retention sweep (04:00) ---
+    if not scheduler.get_job("retention_sweep"):
+        try:
+            tz = pytz.timezone(settings.app.timezone)
+        except Exception:
+            tz = pytz.utc
+        scheduler.add_job(
+            _job_retention_sweep,
+            trigger=CronTrigger(hour=4, minute=0, timezone=tz),
+            id="retention_sweep",
+            name="Backup Retention Sweep",
+            replace_existing=True,
+        )
+        logger.info("Registered retention sweep job (daily at 04:00)")
+
+    # --- 4. Register custom cron jobs for devices ---
     refresh_custom_device_jobs()
 
     scheduler.start()
