@@ -128,6 +128,11 @@ TRANSLATIONS: Dict[str, Dict[str, str]] = {
     "set.active":           {"ru": "активен",               "en": "active"},
     "set.disabled":         {"ru": "отключён",              "en": "disabled"},
     "set.triggers":         {"ru": "триггеры",              "en": "triggers"},
+    "set.save":             {"ru": "сохранить",             "en": "save"},
+    "set.backup_schedule":  {"ru": "расписание по умолчанию",    "en": "default backup schedule"},
+    "set.backup_cron":      {"ru": "cron-выражение",        "en": "cron expression"},
+    "set.backup_cron_hint": {"ru": "5 полей: минута час день месяц день_недели. Пример: 0 3 * * * = ежедневно в 03:00", "en": "5 fields: minute hour day month weekday. Example: 0 3 * * * = daily at 03:00"},
+    "set.cron_invalid":     {"ru": "недопустимое cron-выражение (ожидается 5 полей)", "en": "invalid cron expression (5 fields expected)"},
 
     # --- LDAP ---
     "ldap.title":           {"ru": "ldap аутентификация",   "en": "ldap authentication"},

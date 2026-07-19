@@ -125,6 +125,42 @@ def _job_custom_backup(device_id: int) -> None:
 # Lifecycle
 # ---------------------------------------------------------------------------
 
+def _get_default_cron_from_db() -> str:
+    """Read backup_cron from the app_settings table; fall back to config.yaml value."""
+    try:
+        from app.database import SessionLocal
+        from app.models import AppSetting
+
+        db = SessionLocal()
+        try:
+            row = db.query(AppSetting).filter(AppSetting.key == "backup_cron").first()
+            if row and row.value and row.value.strip():
+                return row.value.strip()
+        finally:
+            db.close()
+    except Exception:
+        pass
+    return settings.scheduler.default_cron
+
+
+def reschedule_default_backup(cron_expr: str) -> None:
+    """Replace the running backup_default job with a new cron expression.
+
+    Called by the settings route after the user saves a new schedule.
+    Validates the expression before applying it.
+    """
+    trigger = _parse_cron(cron_expr)  # raises ValueError on bad input
+    scheduler = get_scheduler()
+    scheduler.add_job(
+        _job_scheduled_backups,
+        trigger=trigger,
+        id="backup_default",
+        name="Default Backup Schedule",
+        replace_existing=True,
+    )
+    logger.info("Rescheduled default backup job (cron='%s')", cron_expr)
+
+
 def start_scheduler() -> None:
     """
     Start the scheduler and register all recurring jobs.
@@ -150,8 +186,9 @@ def start_scheduler() -> None:
         )
 
     # --- 2. Default scheduled backup ---
+    # Priority: app_settings DB → config.yaml → built-in default "0 3 * * *"
     if not scheduler.get_job("backup_default"):
-        cron_expr = settings.scheduler.default_cron  # e.g. "0 3 * * *"
+        cron_expr = _get_default_cron_from_db()
         try:
             trigger = _parse_cron(cron_expr)
             scheduler.add_job(

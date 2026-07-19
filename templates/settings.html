@@ -99,6 +99,29 @@
 <!-- Scheduler -->
 <div class="panel">
   <div class="panel-header"><span class="panel-title">{{ t('set.scheduler') }}</span></div>
+  <div class="panel-body">
+
+    <!-- Default backup schedule form -->
+    <div class="panel-section-title">{{ t('set.backup_schedule') }}</div>
+    <form method="post" action="/settings/scheduler/save" class="metro-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token(request) }}"/>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">{{ t('set.backup_cron') }}</label>
+          <input class="metro-input select-mono" type="text" name="backup_cron"
+                 value="{{ backup_cron }}" placeholder="0 3 * * *" required/>
+          <span class="form-hint{% if cron_error %} text-red{% endif %}">
+            {{ t('set.cron_invalid') if cron_error else t('set.backup_cron_hint') }}
+          </span>
+        </div>
+        <div class="form-group form-group--end">
+          <button type="submit" class="metro-btn primary">{{ t('set.save') }}</button>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <!-- Active jobs table -->
   <div class="table-wrap">
     {% if scheduler_jobs %}
     <table class="metro-table">
@@ -114,7 +137,7 @@
         <tr>
           <td class="mono small">{{ job.id }}</td>
           <td class="small">{{ job.name }}</td>
-          <td class="mono small">{{ job.next_run[:16] if job.next_run != 'N/A' else 'N/A' }}</td>
+          <td class="mono small">{{ job.next_run | fmt_dt }}</td>
         </tr>
         {% endfor %}
       </tbody>

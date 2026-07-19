@@ -59,7 +59,7 @@
               <span class="badge gray">{{ job.status.value }}</span>
             {% endif %}
           </td>
-          <td class="mono small">{{ job.started_at.strftime('%Y-%m-%d %H:%M:%S') if job.started_at else '—' }}</td>
+          <td class="mono small">{{ job.started_at | fmt_dt }}</td>
           <td class="small">{{ job.duration_seconds or '—' }}s</td>
           <td class="mono small">
             {% if job.commit_hash %}

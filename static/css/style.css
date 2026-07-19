@@ -473,6 +473,17 @@ body.theme-light .panel-header { background: rgba(255,255,255,0.35); }
 
 .panel-body { padding: var(--spacing-m); }
 
+.panel-section-title {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-secondary);
+  margin-bottom: var(--sp-3);
+}
+.panel-section-title::first-letter { text-transform: uppercase; }
+
 /* ============================================================
    Dashboard — Stat Tiles
    ============================================================ */

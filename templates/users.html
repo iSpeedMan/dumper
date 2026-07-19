@@ -121,7 +121,7 @@
             </td>
             <td class="small mono text-dim">
               {% if u.last_login %}
-                {{ u.last_login.strftime('%Y-%m-%d %H:%M') }}
+                {{ u.last_login | fmt_dt }}
               {% else %}
                 —
               {% endif %}

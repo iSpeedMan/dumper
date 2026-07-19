@@ -13,7 +13,7 @@ from app.auth import require_auth
 from app.database import get_db
 from app.i18n import make_translator
 from app.models import AppSetting, NotificationWebhook
-from app.scheduler import get_scheduler
+from app.scheduler import get_scheduler, reschedule_default_backup, _get_default_cron_from_db
 from app.templating import templates
 
 router = APIRouter(prefix="/settings")
@@ -55,19 +55,27 @@ async def settings_page(
     jobs = []
     if scheduler.running:
         for job in scheduler.get_jobs():
-            next_run = job.next_run_time.isoformat() if job.next_run_time else "N/A"
-            jobs.append({"id": job.id, "name": job.name, "next_run": next_run})
+            # Pass datetime object directly — fmt_dt filter handles formatting
+            jobs.append({
+                "id": job.id,
+                "name": job.name,
+                "next_run": job.next_run_time,  # datetime | None
+            })
 
     app_settings = _get_settings(db)
+    backup_cron = app_settings.get("backup_cron") or _get_default_cron_from_db()
 
-    return templates.TemplateResponse(request, "settings.html", {        "t": make_translator(lang),
+    return templates.TemplateResponse(request, "settings.html", {
+        "t": make_translator(lang),
         "lang": lang,
         "theme": request.cookies.get("theme", "dark"),
         "user": user,
         "webhooks": webhooks,
         "scheduler_jobs": jobs,
         "app_settings": app_settings,
-        "page_title": "set.title"})
+        "backup_cron": backup_cron,
+        "page_title": "set.title",
+    })
 
 
 # ---------------------------------------------------------------------------
@@ -153,6 +161,59 @@ async def ldap_save(
     for k, v in values.items():
         _set_setting(db, k, v)
     db.commit()
+    return RedirectResponse(url="/settings/", status_code=303)
+
+
+# ---------------------------------------------------------------------------
+# Scheduler settings
+# ---------------------------------------------------------------------------
+
+@router.post("/scheduler/save")
+async def scheduler_save(
+    request: Request,
+    backup_cron: str = Form(...),
+    db: Session = Depends(get_db),
+    user=Depends(require_auth),
+):
+    """Save the default backup cron expression and immediately reschedule the job."""
+    backup_cron = backup_cron.strip()
+    # Validate: must be exactly 5 whitespace-separated fields
+    parts = backup_cron.split()
+    if len(parts) != 5:
+        lang = _lang(request)
+        webhooks = db.query(NotificationWebhook).order_by(NotificationWebhook.name).all()
+        scheduler = get_scheduler()
+        jobs = []
+        if scheduler.running:
+            for job in scheduler.get_jobs():
+                jobs.append({"id": job.id, "name": job.name, "next_run": job.next_run_time})
+        app_settings = _get_settings(db)
+        from app.i18n import make_translator
+        return templates.TemplateResponse(
+            request, "settings.html",
+            {
+                "t": make_translator(lang),
+                "lang": lang,
+                "theme": request.cookies.get("theme", "dark"),
+                "user": user,
+                "webhooks": webhooks,
+                "scheduler_jobs": jobs,
+                "app_settings": app_settings,
+                "backup_cron": backup_cron,
+                "cron_error": True,
+                "page_title": "set.title",
+            },
+            status_code=422,
+        )
+
+    _set_setting(db, "backup_cron", backup_cron)
+    db.commit()
+
+    try:
+        reschedule_default_backup(backup_cron)
+    except Exception as exc:
+        logger.error("Failed to reschedule default backup: %s", exc)
+
     return RedirectResponse(url="/settings/", status_code=303)
 
 

@@ -52,7 +52,7 @@
           </td>
           <td class="small mono">
             {% if last_dates.get(device.id) %}
-              {{ last_dates[device.id].strftime('%Y-%m-%d %H:%M') }}
+              {{ last_dates[device.id] | fmt_dt }}
             {% else %}
               <span class="text-dim">{{ t('inv.never') }}</span>
             {% endif %}

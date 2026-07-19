@@ -73,7 +73,7 @@
             </td>
             <td class="small mono">
               {% if device.ping_status and device.ping_status.last_checked %}
-                {{ device.ping_status.last_checked.strftime('%H:%M:%S') }}
+                {{ device.ping_status.last_checked | fmt_dt }}
                 {% if device.ping_status.rtt_ms %}
                   <span class="rtt">{{ device.ping_status.rtt_ms }}ms</span>
                 {% endif %}
@@ -124,7 +124,7 @@
               {% endif %}
             </td>
             <td class="small">{{ job.duration_seconds or '—' }}s</td>
-            <td class="small mono">{{ job.started_at.strftime('%m-%d %H:%M') if job.started_at else '—' }}</td>
+            <td class="small mono">{{ job.started_at | fmt_dt }}</td>
           </tr>
           {% endfor %}
         </tbody>
